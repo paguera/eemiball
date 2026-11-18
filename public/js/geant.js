@@ -14,10 +14,13 @@ const Y_SOL = -60;         // le sol de la ville (voir level.js)
 const MOUVEMENT_REDUIT = matchMedia('(prefers-reduced-motion: reduce)');
 // Apparences du géant : une image par niveau (sinon celle par défaut).
 // rapport : largeur / hauteur de l'image ; ecran : position de l'écran noir
-// de la télé dans l'image (fractions : gauche, haut, droite, bas).
+// de la télé dans l'image (fractions : gauche, haut, droite, bas) ; angle : si la
+// télé est penchée, rotation de l'écran en degrés (sens des aiguilles d'une montre).
 const APPARENCES = {
   defaut: { image: 'assets/geant-boss.avif', rapport: 320 / 507, ecran: { gauche: 0.344, haut: 0.021, droite: 0.738, bas: 0.215 } },
   2: { image: 'assets/geant-boss-graphisme.webp', rapport: 392 / 560, ecran: { gauche: 0.37, haut: 0.1, droite: 0.78, bas: 0.29 } },
+  // Niveau 3 : BOSS TV en Super Saiyan (sa télé est penchée)
+  3: { image: 'assets/geant-boss-marketing.webp', rapport: 414 / 560, ecran: { gauche: 0.411, haut: 0.19, droite: 0.687, bas: 0.337, angle: 19 } },
 };
 const apparenceDu = (niveau) => APPARENCES[niveau] || APPARENCES.defaut;
 const DUREE_MESSAGE = 3.5; // secondes par message
@@ -196,6 +199,7 @@ export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', 
       HAUTEUR * (1 - (E.haut + E.bas) / 2),
       0.3,
     );
+    ecran.rotation.z = -THREE.MathUtils.degToRad(E.angle || 0);
   }
   changerApparence(lireEtatJeu().niveau);
   let indexMessage = 0, debutMessage = 0, prochainDessin = 0;
