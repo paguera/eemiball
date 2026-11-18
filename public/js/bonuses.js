@@ -7,37 +7,6 @@
 import * as THREE from 'three';
 
 export const TYPES_BONUS = {
-  cafe: {
-    nom: 'Café',
-    duree: 4,
-    creerMesh() {
-      const g = new THREE.Group();
-      const tasse = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.28, 0.22, 0.45, 20),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }),
-      );
-      const cafe = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.25, 0.25, 0.02, 20),
-        new THREE.MeshStandardMaterial({ color: 0x5a3214 }),
-      );
-      cafe.position.y = 0.2;
-      const anse = new THREE.Mesh(
-        new THREE.TorusGeometry(0.12, 0.04, 8, 16),
-        new THREE.MeshStandardMaterial({ color: 0xffffff }),
-      );
-      anse.position.x = 0.3;
-      g.add(tasse, cafe, anse);
-      g.scale.setScalar(1.3);
-      g.traverse((o) => { o.castShadow = true; });
-      return g;
-    },
-    appliquer(game) {
-      game.boostJusqua = game.temps + this.duree;
-      game.audio?.jouer('cafe');
-      game.flash('☕ Café ! Vitesse x1.6');
-    },
-  },
-
   canette: {
     nom: 'Canette énergisante',
     creerMesh() {

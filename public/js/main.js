@@ -10,6 +10,7 @@ import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
 import { createBoule } from './boule.js';
+import { createMenuPersonnages } from './personnages.js';
 import { createAudio } from './audio.js';
 import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauvegarderNom } from './scores.js';
 
@@ -63,6 +64,14 @@ const controles = new Controls(params);
 // Boule de verre transparente avec Thibault dedans (voir boule.js)
 const bouleVisuelle = createBoule(scene);
 const boule = bouleVisuelle.objet;
+
+// Menu de choix du personnage : le choix change tout de suite l'image dans la boule
+const menuPerso = createMenuPersonnages({
+  ecranTitre: $('ecran-titre'), ecranPerso: $('ecran-perso'), grille: $('grille-perso'),
+  bouton: $('btn-perso'), miniature: $('perso-miniature'), nomAffiche: $('perso-nom'), valider: $('btn-perso-ok'),
+  onChoix: (p) => bouleVisuelle.changerPerso(p.image),
+});
+bouleVisuelle.changerPerso(menuPerso.actuel.image);
 
 // ---------------- État du jeu ----------------
 const audio = createAudio();
@@ -244,6 +253,10 @@ $('btn-fermer').addEventListener('click', () => $('reglages').classList.add('cac
 $('btn-defaut').addEventListener('click', reinitialiser);
 addEventListener('keydown', (e) => {
   const dansChamp = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+  if (menuPerso.ouvert) {
+    if (e.key === 'Enter' || e.key === 'Escape') menuPerso.fermer();
+    return;
+  }
   if (e.key === 'Enter' || (e.key === ' ' && !dansChamp)) {
     if (game.etat === 'titre') lancer();
     else if (game.etat === 'fin') nouvellePartie();

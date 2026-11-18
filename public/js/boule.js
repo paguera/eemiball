@@ -1,17 +1,14 @@
 // =====================================================================
-//  LA BOULE : une sphère de verre transparente avec Thibault dedans
+//  LA BOULE : une sphère de verre transparente avec le personnage dedans
 //  - le verre tourne avec la physique (on voit qu'elle roule)
-//  - Thibault (image 2D) reste debout au centre, face à la caméra,
+//  - le personnage (image 2D) reste debout au centre, face à la caméra,
 //    et s'anime selon la vitesse : il se dandine, penche dans les
 //    virages, s'écrase à l'atterrissage, s'agite avec un boost.
-//  Pour changer de personnage : remplace public/assets/thibault.png
-//  et ajuste RAPPORT (largeur / hauteur de l'image).
+//  Le personnage se choisit dans le menu (voir personnages.js).
 // =====================================================================
 import * as THREE from 'three';
 import { RAYON_BOULE } from './physics.js';
 
-const IMAGE = 'assets/thibault.png';
-const RAPPORT = 256 / 262;               // largeur / hauteur de l'image
 const HAUTEUR_PERSO = RAYON_BOULE * 1.4; // il remplit la boule sans que ses mains dépassent
 
 const borner = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -36,12 +33,36 @@ export function createBoule(scene) {
   const objet = new THREE.Group(); // suit la position de la physique (sans tourner)
   scene.add(objet);
 
-  // --- Thibault à l'intérieur ---
-  const texture = new THREE.TextureLoader().load(IMAGE);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  const geo = new THREE.PlaneGeometry(HAUTEUR_PERSO * RAPPORT, HAUTEUR_PERSO);
-  geo.translate(0, HAUTEUR_PERSO / 2, 0); // origine aux pieds : il pivote depuis le bas
-  const perso = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texture, alphaTest: 0.35, side: THREE.DoubleSide }));
+  // --- Le personnage à l'intérieur (image changée avec changerPerso) ---
+  const chargeur = new THREE.TextureLoader();
+  const perso = new THREE.Mesh(
+    new THREE.PlaneGeometry(HAUTEUR_PERSO, HAUTEUR_PERSO),
+    new THREE.MeshBasicMaterial({ alphaTest: 0.35, side: THREE.DoubleSide }),
+  );
+  perso.visible = false; // jusqu'à ce que l'image soit chargée
+  let demande = 0;
+  let baseY = 0; // centre verticalement les images plus larges que hautes
+
+  /** Charge l'image d'un personnage et adapte la taille à ses proportions. */
+  function changerPerso(url) {
+    const n = ++demande;
+    chargeur.load(url, (texture) => {
+      if (n !== demande) { texture.dispose(); return; } // un autre choix est arrivé entre-temps
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const rapport = texture.image.width / texture.image.height;
+      // Les images larges sont réduites pour que les mains ne sortent pas de la boule
+      const h = HAUTEUR_PERSO * Math.min(1, 1 / rapport);
+      const geo = new THREE.PlaneGeometry(h * rapport, h);
+      geo.translate(0, h / 2, 0); // origine aux pieds : il pivote depuis le bas
+      perso.geometry.dispose();
+      perso.geometry = geo;
+      perso.material.map?.dispose();
+      perso.material.map = texture;
+      perso.material.needsUpdate = true;
+      baseY = (HAUTEUR_PERSO - h) / 2;
+      perso.visible = true;
+    });
+  }
   const pivot = new THREE.Group(); // se tourne vers la caméra (axe vertical seulement)
   pivot.position.y = -HAUTEUR_PERSO / 2;
   pivot.add(perso);
@@ -81,11 +102,12 @@ export function createBoule(scene) {
 
   return {
     objet,
+    changerPerso,
 
     /**
      * corps : le corps physique (position, vitesse, rotation)
      * camera : pour orienter Thibault ; cap : direction de la caméra
-     * boost : vrai pendant un café / une canette
+     * boost : vrai pendant une canette
      */
     update(dt, t, corps, camera, cap, boost) {
       objet.position.copy(corps.position);
@@ -128,7 +150,7 @@ export function createBoule(scene) {
 
       perso.rotation.z = dandine + inclinaison + agite + (tombe ? Math.sin(t * 25) * 0.25 : 0);
       perso.rotation.x = penche;
-      perso.position.y = sautille;
+      perso.position.y = baseY + sautille;
       perso.scale.set(
         1 + ecrasement * 0.25 - respire * 0.5,
         1 - ecrasement * 0.3 + respire + (tombe ? 0.08 : 0),
