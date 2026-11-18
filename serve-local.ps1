@@ -8,7 +8,7 @@ $racineAvecSep = $racine.TrimEnd('\') + '\'
 $types = @{
   '.html' = 'text/html; charset=utf-8'; '.js' = 'text/javascript; charset=utf-8'
   '.css'  = 'text/css; charset=utf-8';  '.json' = 'application/json'
-  '.png'  = 'image/png'; '.jpg' = 'image/jpeg'; '.jpeg' = 'image/jpeg'; '.webp' = 'image/webp'
+  '.png'  = 'image/png'; '.jpg' = 'image/jpeg'; '.jpeg' = 'image/jpeg'; '.webp' = 'image/webp'; '.avif' = 'image/avif'
   '.svg'  = 'image/svg+xml'; '.ico' = 'image/x-icon'; '.glb' = 'model/gltf-binary'
   '.mp3'  = 'audio/mpeg'; '.ogg' = 'audio/ogg'; '.wav' = 'audio/wav'
 }

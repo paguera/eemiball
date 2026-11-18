@@ -6,12 +6,12 @@
 // =====================================================================
 
 export const PERSONNAGES = [
-  { id: 'celia',    nom: 'Célia',    image: 'assets/perso-celia.png' },
-  { id: 'emile',    nom: 'Émile',    image: 'assets/perso-emile.png' },
-  { id: 'gabriel',  nom: 'Gabriel',  image: 'assets/perso-gabriel.png' },
-  { id: 'matheo',   nom: 'Mathéo',   image: 'assets/perso-matheo.png' },
-  { id: 'theo',     nom: 'Théo',     image: 'assets/perso-theo.png' },
-  { id: 'thibault', nom: 'Thibault', image: 'assets/perso-thibault.png' },
+  { id: 'celia',    nom: 'Célia',    image: 'assets/perso-celia.avif' },
+  { id: 'emile',    nom: 'Émile',    image: 'assets/perso-emile.avif' },
+  { id: 'gabriel',  nom: 'Gabriel',  image: 'assets/perso-gabriel.avif' },
+  { id: 'matheo',   nom: 'Mathéo',   image: 'assets/perso-matheo.avif' },
+  { id: 'theo',     nom: 'Théo',     image: 'assets/perso-theo.avif' },
+  { id: 'thibault', nom: 'Thibault', image: 'assets/perso-thibault.avif' },
 ];
 
 const PAR_DEFAUT = 'thibault';

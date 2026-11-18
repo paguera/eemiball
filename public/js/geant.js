@@ -120,7 +120,7 @@ function creerEcranTele() {
 }
 
 export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', temps: 0, chutes: 0, etat: 'titre' })) {
-  const texture = new THREE.TextureLoader().load('assets/geant-boss.png');
+  const texture = new THREE.TextureLoader().load('assets/geant-boss.avif');
   texture.colorSpace = THREE.SRGBColorSpace;
 
   // Plan dont l'origine est aux pieds : il pivote depuis le sol
