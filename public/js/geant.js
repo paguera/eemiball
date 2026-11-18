@@ -1,5 +1,5 @@
 // =====================================================================
-//  LE GÉANT : un personnage 2D (image PNG détourée)
+//  LE GÉANT : BOSS TV, un personnage 2D (image PNG détourée)
 //  C'est une image plate qui tourne seulement autour de l'axe vertical
 //  pour faire face à la caméra : elle ne penche pas quand la caméra penche.
 //  Il se tient dans la ville en contrebas, comme King Kong, et suit
@@ -10,7 +10,8 @@ import * as THREE from 'three';
 
 const HAUTEUR = 70;        // taille en mètres (la boule fait 1 m)
 const Y_SOL = -60;         // le sol de la ville (voir level.js)
-const RAPPORT = 155 / 540; // largeur / hauteur de l'image
+const MOUVEMENT_REDUIT = matchMedia('(prefers-reduced-motion: reduce)');
+const RAPPORT = 320 / 507; // largeur / hauteur de l'image (BOSS TV)
 const VITESSE_SUIVI = 0.35;
 
 // --- Arrivée en début de niveau ---
@@ -19,7 +20,7 @@ const VITESSE_ARRIVEE = 7;   // …et arrive à cette vitesse (m/s), environ 15 
 const ZIGZAG = 0.6;          // ampleur de la déambulation (angle en radians)
 
 export function createGeant(scene) {
-  const texture = new THREE.TextureLoader().load('assets/geant.png');
+  const texture = new THREE.TextureLoader().load('assets/geant-boss.png');
   texture.colorSpace = THREE.SRGBColorSpace;
 
   // Plan dont l'origine est aux pieds : il pivote depuis le sol
@@ -88,8 +89,10 @@ export function createGeant(scene) {
 
       // Balancement (respiration + marche) façon King Kong
       const marche = Math.sin(pas) * 0.06;
-      image.rotation.z = Math.sin(t * 0.7) * 0.025 + marche;
-      image.position.y = Math.abs(Math.sin(pas)) * 1.5;
+      // Réglage « réduire les animations » : il reste immobile, sans se balancer
+      const calme = MOUVEMENT_REDUIT.matches;
+      image.rotation.z = calme ? 0 : Math.sin(t * 0.7) * 0.025 + marche;
+      image.position.y = calme ? 0 : Math.abs(Math.sin(pas)) * 1.5;
       image.scale.y = 1 + Math.sin(t * 1.4) * 0.008;
     },
   };

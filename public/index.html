@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#1b1f3b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>EEMI Ball</title>
-  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <title>Super EEMI Roll</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/favicon.png">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=7">
 
   <!-- Bibliothèques embarquées localement dans public/vendor/ -->
   <script type="importmap">
@@ -35,59 +35,72 @@
     }, 10000);
   </script>
 </head>
-<body>
+<body data-impeccable-ignore="hard-offset-shadow"><!-- ombres dures = style « bouton d'arcade » voulu -->
+  <!-- Icônes de l'interface (une seule épaisseur de trait, couleur = couleur du texte) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-fermer" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-son" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-muet" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+    <symbol id="i-recalibrer" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4.5H15"/></symbol>
+    <symbol id="i-reglages" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-suivant" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-trophee" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3.5 4M16 6h3a3 3 0 0 1-3.5 4M12 13v4M9 20h6M10 17h4"/></symbol>
+  </svg>
+
   <canvas id="jeu"></canvas>
 
   <!-- Interface pendant la partie -->
   <div id="hud" class="cache">
-    <button id="btn-quitter" title="Retourner à l'accueil">✕ Quitter</button>
-    <div id="chrono">0.0 s</div>
+    <button id="btn-quitter" type="button"><svg class="icone" aria-hidden="true"><use href="#i-fermer"/></svg>Quitter</button>
+    <div id="chrono" role="timer" aria-label="Temps écoulé">0.0 s</div>
     <div id="effets"></div>
     <div id="boutons">
-      <button id="btn-son" title="Couper / activer le son">🔊</button>
-      <button id="btn-calib" title="Recalibrer le gyroscope (position actuelle = à plat)">⟳</button>
-      <button id="btn-reglages" title="Réglages">⚙</button>
+      <button id="btn-son" type="button" aria-label="Couper le son" aria-pressed="false" title="Couper / activer le son"><svg class="icone icone-son" aria-hidden="true"><use href="#i-son"/></svg><svg class="icone icone-muet" aria-hidden="true"><use href="#i-muet"/></svg></button>
+      <button id="btn-calib" type="button" aria-label="Recalibrer le gyroscope" title="Recalibrer : la position actuelle du téléphone devient « à plat »"><svg class="icone" aria-hidden="true"><use href="#i-recalibrer"/></svg></button>
+      <button id="btn-reglages" type="button" aria-label="Réglages" aria-controls="reglages" aria-expanded="false" title="Réglages"><svg class="icone" aria-hidden="true"><use href="#i-reglages"/></svg></button>
     </div>
-    <div id="inclino" title="Inclinaison lue"><div id="inclino-point"></div></div>
+    <div id="inclino" aria-hidden="true"><div id="inclino-point"></div></div>
     <div id="mode"></div>
-    <div id="flash"></div>
+    <div id="flash" role="status" aria-live="polite"></div>
   </div>
 
   <!-- Joystick tactile (si le gyroscope n'est pas disponible) -->
-  <div id="joystick" class="cache"><div id="joystick-bouton"></div></div>
+  <div id="joystick" class="cache" aria-hidden="true"><div id="joystick-bouton"></div></div>
 
   <!-- Panneau de réglages en direct -->
-  <div id="reglages" class="cache">
-    <h2>Réglages</h2>
+  <div id="reglages" class="cache" role="dialog" aria-labelledby="reglages-titre">
+    <h2 id="reglages-titre">Réglages</h2>
     <div id="reglages-liste"></div>
     <pre id="debug"></pre>
     <div class="ligne-boutons">
-      <button id="btn-defaut" class="secondaire">Valeurs par défaut</button>
-      <button id="btn-fermer">Fermer</button>
+      <button id="btn-defaut" type="button" class="secondaire">Valeurs par défaut</button>
+      <button id="btn-fermer" type="button">Fermer</button>
     </div>
   </div>
 
   <!-- Écran titre -->
   <div id="ecran-titre" class="ecran">
-    <img src="assets/logo.png" alt="Super EEMI Roll" class="logo-titre">
+    <h1 class="sr-only">Super EEMI Roll</h1>
+    <img src="assets/logo.png" alt="Super EEMI Roll" class="logo-titre" width="600" height="200">
     <p class="accroche">Roule jusqu'à l'EEMI le plus vite possible !</p>
     <div class="zone-joueur">
+      <label for="champ-nom" class="sr-only">Ton pseudo</label>
       <input id="champ-nom" type="text" maxlength="20" placeholder="Entre ton pseudo…" autocomplete="nickname">
     </div>
     <button id="btn-perso" type="button" class="btn-perso" title="Choisir son personnage">
-      <img id="perso-miniature" alt="">
+      <img id="perso-miniature" src="assets/perso-thibault.png" alt="" width="46" height="46">
       <span class="btn-perso-texte">Personnage<b id="perso-nom">Thibault</b></span>
-      <span class="btn-perso-chevron">▸</span>
+      <svg class="icone" aria-hidden="true"><use href="#i-suivant"/></svg>
     </button>
     <div id="difficultes" class="difficultes" data-niveau="normal" role="group" aria-label="Niveau de difficulté">
       <button type="button" class="btn-diff" data-difficulte="facile">Facile</button>
       <button type="button" class="btn-diff actif" data-difficulte="normal">Normal</button>
       <button type="button" class="btn-diff" data-difficulte="difficile">Difficile</button>
     </div>
-    <button id="btn-jouer">Jouer</button>
+    <button id="btn-jouer" type="button">Jouer</button>
     <div id="classement" class="classement">
-      <h2>🏆 Classement</h2>
-      <div id="classement-liste" class="classement-liste">Chargement…</div>
+      <h2><svg class="icone" aria-hidden="true"><use href="#i-trophee"/></svg>Classement</h2>
+      <div id="classement-liste" class="classement-liste" aria-live="polite">Chargement…</div>
     </div>
     <p class="aide">
       Tiens ton téléphone devant toi, comme pour lire, puis appuie sur <b>Jouer</b> :
@@ -100,7 +113,7 @@
   <div id="ecran-perso" class="ecran cache">
     <h1 class="titre-perso">Choisis ton <span>perso</span></h1>
     <div id="grille-perso" class="grille-perso" role="radiogroup" aria-label="Personnage"></div>
-    <button id="btn-perso-ok">Valider</button>
+    <button id="btn-perso-ok" type="button">Valider</button>
   </div>
 
   <!-- Écran de fin -->
@@ -108,12 +121,12 @@
     <h1 id="fin-titre"></h1>
     <p id="fin-texte"></p>
     <div class="ligne-boutons">
-      <button id="btn-rejouer">Rejouer</button>
-      <button id="btn-accueil" class="secondaire">Accueil</button>
+      <button id="btn-rejouer" type="button">Rejouer</button>
+      <button id="btn-accueil" type="button" class="secondaire">Accueil</button>
     </div>
   </div>
 
-  <div id="erreur" hidden></div>
+  <div id="erreur" role="alert" hidden></div>
 
   <script type="module" src="js/main.js"></script>
 </body>
