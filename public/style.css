@@ -30,45 +30,49 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
 .ecran h1 span { color: #ffcc00; }
 .accroche { font-size: 1.15rem; margin: 0; }
 .difficultes {
-  display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-  padding: 6px; border-radius: 999px;
+  display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  padding: 8px 12px; border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.25);
   transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
 }
 .difficultes[data-niveau="facile"] {
-  background: rgba(46, 204, 113, 0.18);
+  background: rgba(46, 204, 113, 0.22);
   border-color: #2ecc71;
-  box-shadow: 0 0 18px rgba(46, 204, 113, 0.35);
+  box-shadow: 0 0 22px rgba(46, 204, 113, 0.45);
 }
 .difficultes[data-niveau="normal"] {
-  background: rgba(255, 204, 0, 0.18);
+  background: rgba(255, 204, 0, 0.22);
   border-color: #ffcc00;
-  box-shadow: 0 0 18px rgba(255, 204, 0, 0.35);
+  box-shadow: 0 0 22px rgba(255, 204, 0, 0.45);
 }
 .difficultes[data-niveau="difficile"] {
-  background: rgba(255, 71, 87, 0.2);
+  background: rgba(255, 71, 87, 0.25);
   border-color: #ff4757;
-  box-shadow: 0 0 18px rgba(255, 71, 87, 0.4);
+  box-shadow: 0 0 22px rgba(255, 71, 87, 0.5);
 }
 .btn-diff {
-  padding: 10px 20px; font-size: 1rem;
-  background: transparent; box-shadow: none;
-  opacity: 0.75; transition: background 0.2s, color 0.2s, opacity 0.2s, box-shadow 0.2s;
+  padding: 10px 22px; font-size: 1rem;
+  background: rgba(20, 22, 50, 0.6); box-shadow: none;
+  border: 2px solid transparent;
+  opacity: 0.85; transition: background 0.2s, color 0.2s, opacity 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
+.btn-diff[data-difficulte="facile"] { color: #2ecc71; border-color: rgba(46, 204, 113, 0.4); }
+.btn-diff[data-difficulte="normal"] { color: #ffcc00; border-color: rgba(255, 204, 0, 0.4); }
+.btn-diff[data-difficulte="difficile"] { color: #ff4757; border-color: rgba(255, 71, 87, 0.4); }
 .btn-diff:hover { opacity: 1; }
 .btn-diff.actif[data-difficulte="facile"] {
-  background: #2ecc71; color: #0d2b1a;
+  background: #2ecc71; color: #0d2b1a; border-color: #2ecc71;
   box-shadow: 0 4px 0 #1b8a48; opacity: 1;
 }
 .btn-diff.actif[data-difficulte="facile"]:active { box-shadow: 0 2px 0 #1b8a48; }
 .btn-diff.actif[data-difficulte="normal"] {
-  background: #ffcc00; color: #1b1f3b;
+  background: #ffcc00; color: #1b1f3b; border-color: #ffcc00;
   box-shadow: 0 4px 0 #b38f00; opacity: 1;
 }
 .btn-diff.actif[data-difficulte="normal"]:active { box-shadow: 0 2px 0 #b38f00; }
 .btn-diff.actif[data-difficulte="difficile"] {
-  background: #ff4757; color: #fff;
+  background: #ff4757; color: #fff; border-color: #ff4757;
   box-shadow: 0 4px 0 #a81c29; opacity: 1;
 }
 .btn-diff.actif[data-difficulte="difficile"]:active { box-shadow: 0 2px 0 #a81c29; }

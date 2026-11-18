@@ -101,7 +101,7 @@ export function createTuning(conteneur, onChange) {
     conteneur.append(div);
   }
 
-  function appliquerValeurs(valeurs) {
+  function appliquerValeurs(valeurs, notifier = true) {
     for (const r of REGLAGES) {
       if (!(r.cle in valeurs)) continue;
       params[r.cle] = valeurs[r.cle];
@@ -109,7 +109,7 @@ export function createTuning(conteneur, onChange) {
       else { champs[r.cle].value = valeurs[r.cle]; champs[r.cle + '_valeur'].textContent = valeurs[r.cle]; }
     }
     ecrireStockage(params);
-    onChange();
+    if (notifier) onChange();
   }
 
   function reinitialiser() {
@@ -118,9 +118,9 @@ export function createTuning(conteneur, onChange) {
     appliquerValeurs(defauts);
   }
 
-  function appliquerDifficulte(niveau) {
+  function appliquerDifficulte(niveau, notifier = true) {
     const preset = DIFFICULTES[niveau];
-    if (preset) appliquerValeurs(preset);
+    if (preset) appliquerValeurs(preset, notifier);
   }
 
   function difficulteActuelle() {
@@ -129,6 +129,13 @@ export function createTuning(conteneur, onChange) {
       if (correspond) return niveau;
     }
     return null;
+  }
+
+  // Si d'anciens réglages en cache ne correspondent plus à aucun niveau, on migre vers le niveau correspondant
+  if (!difficulteActuelle()) {
+    if (params.frottement >= 0.7) appliquerDifficulte('facile', false);
+    else if (params.frottement <= 0.2) appliquerDifficulte('difficile', false);
+    else appliquerDifficulte('normal', false);
   }
 
   return { params, reinitialiser, appliquerDifficulte, difficulteActuelle };
