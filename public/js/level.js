@@ -55,13 +55,27 @@ function textureTexte(lignes, fond, couleur, l = 512, h = 256) {
 export function buildLevel(scene, world, solMat) {
   const grille = textureGrille();
 
+  /**
+   * Boîte dont la texture garde la même taille sur toutes les faces (1 case = 2 m).
+   * Avant, chaque face reprenait la répétition du dessus : sur les côtés fins
+   * (1 m de haut), le quadrillage était écrasé en fines rayures.
+   */
+  function geometrieBoite([l, h, p]) {
+    const geo = new THREE.BoxGeometry(l, h, p);
+    const uv = geo.attributes.uv;
+    // Ordre des faces de BoxGeometry : +x, -x, +y, -y, +z, -z (4 sommets chacune)
+    const tailles = [[p, h], [p, h], [l, p], [l, p], [l, h], [l, h]];
+    tailles.forEach(([u, v], face) => {
+      for (let i = face * 4; i < face * 4 + 4; i++) uv.setXY(i, uv.getX(i) * u / 2, uv.getY(i) * v / 2);
+    });
+    uv.needsUpdate = true;
+    return geo;
+  }
+
   /** Boîte à la fois visible (Three.js) et solide (cannon-es). */
   function addBox(centre, taille, quat, couleur, options = {}) {
-    const tex = grille.clone();
-    tex.needsUpdate = true;
-    tex.repeat.set(Math.max(1, taille[0] / 2), Math.max(1, taille[2] / 2));
-    const mat = options.materiau || new THREE.MeshStandardMaterial({ color: couleur, map: tex, roughness: 0.85 });
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...taille), mat);
+    const mat = options.materiau || new THREE.MeshStandardMaterial({ color: couleur, map: grille, roughness: 0.85 });
+    const mesh = new THREE.Mesh(geometrieBoite(taille), mat);
     mesh.position.copy(centre);
     mesh.quaternion.copy(quat);
     mesh.castShadow = true;
@@ -142,7 +156,8 @@ export function buildLevel(scene, world, solMat) {
   slab([0, 2, -50.5], [0, 2, -62], 9, vert);
 
   // 8. Virage à droite avec rebords
-  slab([3, 2, -59], [20, 2, -59], 5, bleu);
+  // Commence au bord de la réception (x = 4.5) : deux dessus superposés au même niveau scintillaient
+  slab([4.5, 2, -59], [20, 2, -59], 5, bleu);
   mur([13, 2.35, -56.75], [14, 0.7, 0.5]);
   mur([13, 2.35, -61.25], [14, 0.7, 0.5]);
 

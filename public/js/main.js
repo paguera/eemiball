@@ -93,7 +93,13 @@ const game = {
   },
 };
 const bonus = createBonuses(scene, niveau.bonus, game);
-const geant = createGeant(scene);
+// Le géant BOSS TV affiche l'état de la partie sur son écran
+const geant = createGeant(scene, () => ({
+  difficulte: difficulteActuelle() || 'normal',
+  temps: game.temps,
+  chutes: game.chutes,
+  etat: game.etat,
+}));
 
 physique.boule.addEventListener('collide', (e) => {
   if (game.etat === 'jeu') {
