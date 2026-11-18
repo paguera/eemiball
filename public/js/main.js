@@ -286,7 +286,7 @@ const NOMS_MODES = { gyro: '📱 gyroscope', clavier: '⌨️ clavier', tactile:
 
 function majHUD() {
   elChrono.textContent = `${game.temps.toFixed(1)} s`;
-  elEffets.textContent = game.boost ? `☕ ${(game.boostJusqua - game.temps).toFixed(1)} s` : '';
+  elEffets.textContent = game.boost ? `⚡ ${(game.boostJusqua - game.temps).toFixed(1)} s` : '';
   elPoint.style.transform = `translate(${controles.tilt.x * 27}px, ${-controles.tilt.y * 27}px)`;
   elMode.textContent = NOMS_MODES[controles.mode] || '';
   if (!$('reglages').classList.contains('cache')) {
