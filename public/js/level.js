@@ -1,7 +1,8 @@
 // =====================================================================
-//  NIVEAU « BAC À SABLE »
-//  Parcours : départ → bosses → rampe → plateau → pont étroit → saut
-//             → virage avec rebords → descente → arrivée à l'EEMI
+//  CONSTRUCTION DES NIVEAUX
+//  Le décor (Lyon, univers code) est construit une seule fois.
+//  Le parcours du niveau choisi (voir niveaux.js) est construit dans un
+//  groupe à part : on peut le démonter et en charger un autre.
 //  Coordonnées : -Z = devant au départ, +X = droite, Y = hauteur.
 //  Les points donnés à slab() sont le DESSUS de la plateforme.
 // =====================================================================
@@ -9,6 +10,8 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { creerLyon } from './decor-lyon.js';
 import { creerUniversCode } from './decor-code.js';
+import { creerUniversGraphisme } from './decor-graphisme.js';
+import { trouverNiveau } from './niveaux.js';
 
 const HAUT = new THREE.Vector3(0, 1, 0);
 
@@ -25,6 +28,29 @@ function textureGrille() {
   lignes.forEach(([x, l], i) => ctx.fillRect(x + 6, 14 + i * 13, l, 6));
   ctx.strokeStyle = 'rgba(0,0,0,0.18)';
   ctx.lineWidth = 6;
+  ctx.strokeRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
+// Texture « papier millimétré » (niveau 2, univers graphisme) : 1 carreau = 2 m
+function textureMillimetre() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.strokeStyle = 'rgba(0, 120, 200, 0.22)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 128; i += 16) {
+    ctx.beginPath(); ctx.moveTo(i + 0.5, 0); ctx.lineTo(i + 0.5, 128); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i + 0.5); ctx.lineTo(128, i + 0.5); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(0, 90, 170, 0.45)';
+  ctx.lineWidth = 5;
   ctx.strokeRect(0, 0, 128, 128);
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -53,7 +79,13 @@ function textureTexte(lignes, fond, couleur, l = 512, h = 256) {
 }
 
 export function buildLevel(scene, world, solMat) {
-  const grille = textureGrille();
+  const textures = { code: textureGrille(), millimetre: textureMillimetre() };
+  let grille = textures.code; // texture des plateformes du niveau en cours
+
+  // Ce qui appartient au parcours en cours (démonté à chaque changement de niveau)
+  let groupe = null;
+  let corpsParcours = [];
+  const ajouterCorps = (b) => { world.addBody(b); corpsParcours.push(b); };
 
   /**
    * Boîte dont la texture garde la même taille sur toutes les faces (1 case = 2 m).
@@ -80,7 +112,7 @@ export function buildLevel(scene, world, solMat) {
     mesh.quaternion.copy(quat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    scene.add(mesh);
+    groupe.add(mesh);
 
     const corps = new CANNON.Body({
       mass: 0,
@@ -89,12 +121,12 @@ export function buildLevel(scene, world, solMat) {
     });
     corps.position.set(centre.x, centre.y, centre.z);
     corps.quaternion.set(quat.x, quat.y, quat.z, quat.w);
-    world.addBody(corps);
+    ajouterCorps(corps);
     return mesh;
   }
 
   /** Plateforme (plate ou en pente) entre deux points du dessus. */
-  function slab(debut, fin, largeur, couleur, epaisseur = 1) {
+  function slab(debut, fin, largeur, couleur = 0x4f8cff, epaisseur = 1) {
     const s = new THREE.Vector3(...debut);
     const e = new THREE.Vector3(...fin);
     const dir = e.clone().sub(s);
@@ -107,91 +139,36 @@ export function buildLevel(scene, world, solMat) {
     return addBox(centre, [largeur, epaisseur, L], q, couleur);
   }
 
+  /**
+   * Dalle carrée à plat, 2 cm plus haute que les routes qu'elle recouvre
+   * (aux jonctions, deux dessus au même niveau scintilleraient).
+   */
+  function dalle(x, y, z, largeur, profondeur, couleur = 0x4f8cff) {
+    return slab([x, y + 0.02, z + profondeur / 2], [x, y + 0.02, z - profondeur / 2], largeur, couleur);
+  }
+
   /** Mur / rebord aligné sur les axes. */
   function mur(centre, taille, couleur = 0xffffff) {
     return addBox(new THREE.Vector3(...centre), taille, new THREE.Quaternion(), couleur);
   }
 
   /** Bosse : une sphère à moitié enterrée dans le sol. */
+  const matBosse = new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.7 });
   function bosse(x, ySol, z, rayon = 1.2, depasse = 0.35) {
     const y = ySol - rayon + depasse;
-    const mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(rayon, 24, 16),
-      new THREE.MeshStandardMaterial({ color: 0xff8a3d, roughness: 0.7 }),
-    );
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(rayon, 24, 16), matBosse);
     mesh.position.set(x, y, z);
     mesh.castShadow = mesh.receiveShadow = true;
-    scene.add(mesh);
+    groupe.add(mesh);
     const corps = new CANNON.Body({ mass: 0, material: solMat, shape: new CANNON.Sphere(rayon) });
     corps.position.set(x, y, z);
-    world.addBody(corps);
+    ajouterCorps(corps);
   }
 
-  // ---------------- PARCOURS ----------------
-  const bleu = 0x4f8cff, vert = 0x46c37b, jaune = 0xffd447, rose = 0xff5fa2, gris = 0xd8dbe6;
-
-  // 1. Départ (avec un petit mur derrière)
-  slab([0, 0, 6], [0, 0, -6], 8, bleu);
-  mur([0, 0.4, 6.25], [8, 0.8, 0.5]);
-
-  // 2. Ligne droite avec des bosses
-  slab([0, 0, -6], [0, 0, -18], 5, vert);
-  bosse(1.2, 0, -9.5);
-  bosse(-1.3, 0, -13);
-  bosse(0.9, 0, -16);
-
-  // 3. Rampe qui monte (3 m sur 12 m)
-  slab([0, 0, -18], [0, 3, -30], 5, jaune);
-
-  // 4. Plateau
-  slab([0, 3, -30], [0, 3, -35], 7, bleu);
-
-  // 5. Pont étroit
-  slab([0, 3, -35], [0, 3, -46], 1.8, rose);
-
-  // 6. Tremplin puis trou de 2 m
-  slab([0, 3, -46], [0, 3.6, -48.5], 2.5, jaune);
-
-  // 7. Réception (plus basse)
-  slab([0, 2, -50.5], [0, 2, -62], 9, vert);
-
-  // 8. Virage à droite avec rebords
-  // Commence au bord de la réception (x = 4.5) : deux dessus superposés au même niveau scintillaient
-  slab([4.5, 2, -59], [20, 2, -59], 5, bleu);
-  mur([13, 2.35, -56.75], [14, 0.7, 0.5]);
-  mur([13, 2.35, -61.25], [14, 0.7, 0.5]);
-
-  // 9. Descente vers l'école
-  slab([20, 2, -59], [28, 0.5, -59], 5, jaune);
-
-  // 10. Parvis de l'EEMI
-  slab([28, 0.5, -59], [49, 0.5, -59], 12, gris);
-
-  // ---------------- ARRIVÉE : portail + bâtiment EEMI ----------------
-  const portailX = 36;
+  // ---------------- ARRIVÉE : portail + bâtiment EEMI (matériaux partagés entre niveaux) ----------------
   const matPoteau = new THREE.MeshStandardMaterial({ color: 0xe6007e });
-  for (const z of [-62.2, -55.8]) {
-    const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 4, 0.4), matPoteau);
-    p.position.set(portailX, 2.5, z);
-    p.castShadow = true;
-    scene.add(p);
-  }
-  const banniere = new THREE.Mesh(
-    new THREE.BoxGeometry(0.3, 1, 6.8),
-    [
-      matPoteau, // +x
-      new THREE.MeshBasicMaterial({ map: textureTexte([{ texte: 'ARRIVÉE', taille: 120 }], '#e6007e', '#ffffff', 1024, 160) }), // -x (vers le joueur)
-      matPoteau, matPoteau, matPoteau, matPoteau,
-    ],
-  );
-  banniere.position.set(portailX, 4.5, -59);
-  scene.add(banniere);
-
-  // Bâtiment (solide : la boule s'arrête contre)
-  const facade = textureTexte(
-    [{ texte: 'EEMI', taille: 200 }, { texte: 'Lyon', taille: 80 }],
-    '#1b1f3b', '#ffffff', 512, 512,
-  );
+  const matBanniere = new THREE.MeshBasicMaterial({ map: textureTexte([{ texte: 'ARRIVÉE', taille: 120 }], '#e6007e', '#ffffff', 1024, 160) });
+  const facade = textureTexte([{ texte: 'EEMI', taille: 200 }, { texte: 'Lyon', taille: 80 }], '#1b1f3b', '#ffffff', 512, 512);
   const fenetres = (() => {
     const c = document.createElement('canvas');
     c.width = c.height = 256;
@@ -202,35 +179,98 @@ export function buildLevel(scene, world, solMat) {
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   })();
   const matFenetres = new THREE.MeshStandardMaterial({ map: fenetres });
-  const batiment = new THREE.Mesh(new THREE.BoxGeometry(5, 9, 12), [
-    matFenetres, new THREE.MeshStandardMaterial({ map: facade }),
-    new THREE.MeshStandardMaterial({ color: 0x444a66 }), matFenetres, matFenetres, matFenetres,
-  ]);
-  batiment.position.set(46, 0.5 + 4.5, -59);
-  batiment.castShadow = batiment.receiveShadow = true;
-  scene.add(batiment);
-  const corpsBat = new CANNON.Body({ mass: 0, material: solMat, shape: new CANNON.Box(new CANNON.Vec3(2.5, 4.5, 6)) });
-  corpsBat.position.set(46, 5, -59);
-  world.addBody(corpsBat);
+  const matsBatiment = [
+    matFenetres, matFenetres, new THREE.MeshStandardMaterial({ color: 0x444a66 }), matFenetres,
+    new THREE.MeshStandardMaterial({ map: facade }), matFenetres,
+  ];
 
-  // ---------------- DÉCOR : Lyon en contrebas + univers dev/coding ----------------
+  /**
+   * Portail d'arrivée et bâtiment EEMI, orientés selon la direction d'arrivée.
+   * Repère local de l'arrivée : -Z = sens de la course (comme la caméra).
+   */
+  function construireArrivee({ x, y, z, angle }) {
+    const arrivee = new THREE.Group();
+    arrivee.position.set(x, y, z);
+    arrivee.rotation.y = angle;
+    for (const cote of [-3.2, 3.2]) {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.4, 4, 0.4), matPoteau);
+      p.position.set(cote, 2, 0);
+      p.castShadow = true;
+      arrivee.add(p);
+    }
+    // La face +Z de la bannière regarde le joueur qui arrive
+    const banniere = new THREE.Mesh(new THREE.BoxGeometry(6.8, 1, 0.3), [matPoteau, matPoteau, matPoteau, matPoteau, matBanniere, matPoteau]);
+    banniere.position.set(0, 4, 0);
+    arrivee.add(banniere);
+    // Bâtiment EEMI 10 m après le portail, façade (+Z) tournée vers le joueur
+    const batiment = new THREE.Mesh(new THREE.BoxGeometry(12, 9, 5), matsBatiment);
+    batiment.position.set(0, 4.5, -10);
+    batiment.castShadow = batiment.receiveShadow = true;
+    arrivee.add(batiment);
+    groupe.add(arrivee);
+
+    arrivee.updateMatrixWorld(true);
+    const posBat = batiment.getWorldPosition(new THREE.Vector3());
+    const corpsBat = new CANNON.Body({ mass: 0, material: solMat, shape: new CANNON.Box(new CANNON.Vec3(6, 4.5, 2.5)) });
+    corpsBat.position.set(posBat.x, posBat.y, posBat.z);
+    corpsBat.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), angle);
+    ajouterCorps(corpsBat);
+  }
+
+  // ---------------- DÉCOR : Lyon en contrebas + univers dev/coding (une seule fois) ----------------
   creerLyon(scene);
-  const universCode = creerUniversCode(scene);
+  // Un univers par niveau : seul celui du niveau en cours est affiché et animé
+  const univers = {
+    code: creerUniversCode(scene),
+    graphisme: creerUniversGraphisme(scene),
+  };
+  let universActuel = univers.code;
+
+  // ---------------- Chargement d'un niveau ----------------
+  let niveauActuel = null;
+
+  function demonter() {
+    if (!groupe) return;
+    groupe.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+    scene.remove(groupe);
+    for (const b of corpsParcours) world.removeBody(b);
+    corpsParcours = [];
+    groupe = null;
+  }
+
+  /** Démonte le parcours actuel et construit celui du niveau demandé (voir niveaux.js). */
+  function charger(numero) {
+    demonter();
+    niveauActuel = trouverNiveau(numero);
+    grille = textures[niveauActuel.texture] || textures.code;
+    universActuel = univers[niveauActuel.univers] || univers.code;
+    for (const u of Object.values(univers)) u.groupe.visible = u === universActuel;
+    groupe = new THREE.Group();
+    scene.add(groupe);
+    niveauActuel.construire({ slab, dalle, mur, bosse });
+    construireArrivee(niveauActuel.arrivee);
+  }
+
+  charger(1);
 
   return {
-    depart: { x: 0, y: 1.2, z: 3 },
-    capDepart: 0,          // la caméra regarde vers -Z
-    /** Animation du décor (code qui flotte, particules), appelée à chaque image. */
-    animer(t, dt) { universCode.animer(t, dt); },
+    charger,
+    get numero() { return niveauActuel.numero; },
+    get nom() { return niveauActuel.nom; },
+    get depart() { return niveauActuel.depart; },
+    get capDepart() { return niveauActuel.capDepart; },
+    get vue() { return niveauActuel.vue; },
+    get bonus() { return niveauActuel.bonus; },
     yChute: -8,            // en dessous : on a chuté
-    /** Vrai quand la boule passe sous le portail. */
+    /** Animation du décor (code qui flotte, particules), appelée à chaque image. */
+    animer(t, dt) { universActuel.animer(t, dt); },
+    /** Vrai quand la boule passe sous le portail (calcul dans le repère de l'arrivée). */
     estArrive(p) {
-      return p.x > portailX - 0.5 && p.x < portailX + 1.5 && p.z > -62 && p.z < -56 && p.y > 0;
+      const { x, y, z, angle } = niveauActuel.arrivee;
+      const dx = p.x - x, dz = p.z - z;
+      const avant = -dx * Math.sin(angle) - dz * Math.cos(angle); // distance parcourue après le portail
+      const cote = dx * Math.cos(angle) - dz * Math.sin(angle);
+      return avant > -0.5 && avant < 1.5 && Math.abs(cote) < 3 && p.y > y - 0.5;
     },
-    bonus: [
-      { type: 'canette', pos: [-1.5, 0.8, -11] },
-      { type: 'canette', pos: [0, 3.8, -40.5] },
-      { type: 'canette', pos: [32, 1.3, -61] },
-    ],
   };
 }

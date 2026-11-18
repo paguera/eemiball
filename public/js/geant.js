@@ -19,9 +19,9 @@ const DUREE_MESSAGE = 3.5; // secondes par message
 
 // Messages de la télé. Chaque ligne reçoit l'état du jeu et renvoie 1 à 3 lignes de texte.
 // Pour en ajouter un : ajoute une ligne ici.
-const NOMS_DIFFICULTE = { facile: 'FACILE', normal: 'NORMAL', difficile: 'DIFFICILE' };
+const NOMS_DIFFICULTE = { facile: 'VITESSE LENTE', normal: 'VITESSE MOYENNE', difficile: 'VITESSE RAPIDE' };
 const MESSAGES = [
-  (j) => ['NIVEAU 1', NOMS_DIFFICULTE[j.difficulte] || 'NORMAL'],
+  (j) => [`NIVEAU ${j.niveau || 1}`, NOMS_DIFFICULTE[j.difficulte] || 'VITESSE MOYENNE'],
   () => ['RACHÈTE', 'DES TOKENS !'],
   (j) => (j.etat === 'jeu' ? ['TON TEMPS', `${j.temps.toFixed(1)} s`] : ['PRÊT ?', 'APPUIE SUR', 'JOUER']),
   () => ['COURS À 9H', 'DÉPÊCHE-TOI !'],
@@ -34,6 +34,17 @@ const MESSAGES = [
   () => ['BONJOUR', 'LYON !'],
   () => ['TOKENS', 'ÉPUISÉS', 'PASSE PRO'],
 ];
+// Messages en plus au niveau 2 (univers graphisme)
+const MESSAGES_GRAPHISME = [
+  () => ['CTRL+Z', 'CTRL+Z', 'CTRL+Z'],
+  () => ['COMIC SANS', 'DÉTECTÉE !'],
+  () => ['EXPORT', 'final_v7.png'],
+  () => ['KERNING', 'À REVOIR'],
+  () => ['RVB ≠ CMJN'],
+];
+function listeMessages(j) {
+  return j.niveau === 2 ? [...MESSAGES, ...MESSAGES_GRAPHISME] : MESSAGES;
+}
 const VITESSE_SUIVI = 0.35;
 
 // --- Arrivée en début de niveau ---
@@ -47,56 +58,72 @@ const ZIGZAG = 0.6;          // ampleur de la déambulation (angle en radians)
  * petit « glitch » à chaque changement de message).
  */
 function creerEcranTele() {
+  const l = 256, h = 200;
+  // Fond pré-calculé une seule fois (évite de redessiner le dégradé et 75 lignes à chaque image)
+  const fondCanvas = document.createElement('canvas');
+  fondCanvas.width = l; fondCanvas.height = h;
+  const fCtx = fondCanvas.getContext('2d');
+  const r = 22, x0 = 3, y0 = 3, lw = l - 6, lh = h - 6;
+  fCtx.beginPath();
+  fCtx.moveTo(x0 + r, y0);
+  fCtx.lineTo(x0 + lw - r, y0);
+  fCtx.quadraticCurveTo(x0 + lw, y0, x0 + lw, y0 + r);
+  fCtx.lineTo(x0 + lw, y0 + lh - r);
+  fCtx.quadraticCurveTo(x0 + lw, y0 + lh, x0 + lw - r, y0 + lh);
+  fCtx.lineTo(x0 + r, y0 + lh);
+  fCtx.quadraticCurveTo(x0, y0 + lh, x0, y0 + lh - r);
+  fCtx.lineTo(x0, y0 + r);
+  fCtx.quadraticCurveTo(x0, y0, x0 + r, y0);
+  fCtx.closePath();
+  fCtx.clip();
+  const fond = fCtx.createRadialGradient(l / 2, h / 2, 8, l / 2, h / 2, l * 0.7);
+  fond.addColorStop(0, '#1a1430'); fond.addColorStop(1, '#05040a');
+  fCtx.fillStyle = fond; fCtx.fillRect(0, 0, l, h);
+  fCtx.font = 'bold 14px Consolas, "Courier New", monospace';
+  fCtx.textBaseline = 'middle';
+  fCtx.fillStyle = 'rgba(255,255,255,0.55)';
+  fCtx.textAlign = 'left'; fCtx.fillText('BOSS.TV', 18, 20);
+  fCtx.fillStyle = 'rgba(0,0,0,0.25)';
+  for (let y = 0; y < h; y += 4) fCtx.fillRect(0, y, l, 2);
+
   const c = document.createElement('canvas');
-  c.width = 384; c.height = 300;
+  c.width = l; c.height = h;
   const ctx = c.getContext('2d');
   const texture = new THREE.CanvasTexture(c);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
   const couleurs = ['#7df9ff', '#c792ff', '#ffcc00', '#7dffb5'];
 
   function dessiner(lignes, couleur, t, glitch) {
-    const l = c.width, h = c.height;
     ctx.clearRect(0, 0, l, h);
-    // Fond d'écran cathodique (coins arrondis transparents, léger halo au centre)
-    ctx.save();
-    ctx.beginPath(); ctx.roundRect(4, 4, l - 8, h - 8, 34); ctx.clip();
-    const fond = ctx.createRadialGradient(l / 2, h / 2, 10, l / 2, h / 2, l * 0.7);
-    fond.addColorStop(0, '#1a1430'); fond.addColorStop(1, '#05040a');
-    ctx.fillStyle = fond; ctx.fillRect(0, 0, l, h);
-    // En-tête
-    ctx.font = 'bold 20px Consolas, "Courier New", monospace';
+    ctx.drawImage(fondCanvas, 0, 0);
+    ctx.font = 'bold 14px Consolas, "Courier New", monospace';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.textAlign = 'left'; ctx.fillText('BOSS.TV', 26, 30);
     ctx.textAlign = 'right';
     ctx.fillStyle = Math.sin(t * 4) > 0 ? '#ff4757' : 'rgba(255,71,87,0.3)';
-    ctx.fillText('● LIVE', l - 26, 30);
-    // Texte principal : taille ajustée pour tenir dans l'écran
+    ctx.fillText('● LIVE', l - 18, 20);
+
     ctx.textAlign = 'center';
-    let taille = lignes.length > 2 ? 52 : 62;
+    let taille = lignes.length > 2 ? 34 : 40;
     ctx.font = `bold ${taille}px Consolas, "Courier New", monospace`;
-    while (taille > 24 && Math.max(...lignes.map((x) => ctx.measureText(x).width)) > l - 50) {
-      taille -= 2;
+    while (taille > 16 && Math.max(...lignes.map((x) => ctx.measureText(x).width)) > l - 34) {
+      taille -= 4;
       ctx.font = `bold ${taille}px Consolas, "Courier New", monospace`;
     }
     const pas = taille * 1.12;
-    const y0 = h / 2 + 14 - ((lignes.length - 1) * pas) / 2;
-    const decalage = glitch ? 6 : 0;
+    const cy = h / 2 + 10 - ((lignes.length - 1) * pas) / 2;
+    const decalage = glitch ? 4 : 0;
     lignes.forEach((ligne, i) => {
-      const y = y0 + i * pas;
+      const y = cy + i * pas;
       const texte = i === lignes.length - 1 && Math.sin(t * 6) > 0 ? ligne + '_' : ligne;
-      if (glitch) { // séparation rouge / bleu façon signal brouillé
+      if (glitch) {
         ctx.fillStyle = 'rgba(255,40,80,0.7)'; ctx.fillText(texte, l / 2 - decalage, y);
         ctx.fillStyle = 'rgba(40,160,255,0.7)'; ctx.fillText(texte, l / 2 + decalage, y);
       }
-      ctx.shadowColor = couleur; ctx.shadowBlur = 18;
       ctx.fillStyle = couleur; ctx.fillText(texte, l / 2, y);
-      ctx.shadowBlur = 0;
     });
-    // Lignes de balayage
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, l, 2);
-    ctx.restore();
     texture.needsUpdate = true;
   }
 
@@ -104,7 +131,7 @@ function creerEcranTele() {
 }
 
 export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', temps: 0, chutes: 0, etat: 'titre' })) {
-  const texture = new THREE.TextureLoader().load('assets/geant-boss.png');
+  const texture = new THREE.TextureLoader().load('assets/geant-boss.avif');
   texture.colorSpace = THREE.SRGBColorSpace;
 
   // Plan dont l'origine est aux pieds : il pivote depuis le sol
@@ -203,12 +230,14 @@ export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', 
       // Télé : message suivant toutes les DUREE_MESSAGE secondes, redessin ~8 fois par seconde
       if (debutMessage === -Infinity) debutMessage = t;
       if (t - debutMessage > DUREE_MESSAGE) {
-        indexMessage = (indexMessage + 1) % MESSAGES.length;
+        indexMessage = (indexMessage + 1) % listeMessages(lireEtatJeu()).length;
         debutMessage = t;
       }
       if (t >= prochainDessin) {
-        prochainDessin = t + 0.125;
-        const lignes = MESSAGES[indexMessage](lireEtatJeu());
+        prochainDessin = t + 0.5;
+        const etat = lireEtatJeu();
+        const liste = listeMessages(etat);
+        const lignes = liste[indexMessage % liste.length](etat);
         const glitch = !calme && t - debutMessage < 0.25;
         tele.dessiner(lignes, tele.couleurs[indexMessage % tele.couleurs.length], t, glitch);
       }

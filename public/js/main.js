@@ -7,6 +7,7 @@ import { createTuning } from './tuning.js';
 import { Controls } from './controls.js';
 import { createPhysics, RAYON_BOULE } from './physics.js';
 import { buildLevel } from './level.js';
+import { trouverNiveau } from './niveaux.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
 import { createBoule } from './boule.js';
@@ -17,24 +18,33 @@ import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauv
 const $ = (id) => document.getElementById(id);
 // Réglage « réduire les animations » du téléphone / de l'ordinateur
 const mouvementReduit = matchMedia('(prefers-reduced-motion: reduce)');
+const estMobile = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 
 // ---------------- Rendu ----------------
-const renderer = new THREE.WebGLRenderer({ canvas: $('jeu'), antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const canvasJeu = $('jeu');
+canvasJeu.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvasJeu,
+  antialias: !estMobile,
+  powerPreference: 'high-performance',
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, estMobile ? 1.25 : 2));
+renderer.shadowMap.enabled = !estMobile;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9fd3ff);
-scene.fog = new THREE.Fog(0x9fd3ff, 45, 150);
+scene.background = new THREE.Color(0x5f7fd6);
+scene.fog = new THREE.Fog(0xd8bfcc, 80, 260);
 
-const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
+const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 350);
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.3));
 const soleil = new THREE.DirectionalLight(0xffffff, 1.8);
-soleil.castShadow = true;
-soleil.shadow.mapSize.set(1024, 1024);
-Object.assign(soleil.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 70 });
+soleil.castShadow = !estMobile;
+if (!estMobile) {
+  soleil.shadow.mapSize.set(1024, 1024);
+  Object.assign(soleil.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 70 });
+}
 scene.add(soleil, soleil.target);
 
 function redimensionner() {
@@ -61,6 +71,21 @@ const { params, reinitialiser, appliquerDifficulte, difficulteActuelle } = creat
 const physique = createPhysics(params);
 majBoutonsDifficulte();
 const niveau = buildLevel(scene, physique.world, physique.solMat);
+
+// Niveau choisi (mémorisé) : seuls les niveaux définis dans niveaux.js sont jouables
+const CLE_NIVEAU = 'eemiball-niveau';
+const boutonsNiveau = document.querySelectorAll('.btn-niveau');
+function lireNiveauSauvegarde() {
+  try { return trouverNiveau(localStorage.getItem(CLE_NIVEAU)).numero; } catch { return 1; }
+}
+function majBoutonsNiveau() {
+  boutonsNiveau.forEach((btn) => {
+    const actif = Number(btn.dataset.niveau) === niveau.numero;
+    btn.classList.toggle('actif', actif);
+    btn.setAttribute('aria-pressed', String(actif));
+  });
+}
+if (lireNiveauSauvegarde() !== niveau.numero) niveau.charger(lireNiveauSauvegarde());
 const controles = new Controls(params);
 
 // Boule de verre transparente avec Thibault dedans (voir boule.js)
@@ -92,9 +117,10 @@ const game = {
     el.classList.add('visible');
   },
 };
-const bonus = createBonuses(scene, niveau.bonus, game);
+let bonus = createBonuses(scene, niveau.bonus, game);
 // Le géant BOSS TV affiche l'état de la partie sur son écran
 const geant = createGeant(scene, () => ({
+  niveau: niveau.numero,
   difficulte: difficulteActuelle() || 'normal',
   temps: game.temps,
   chutes: game.chutes,
@@ -116,6 +142,9 @@ const champNom = $('champ-nom');
 const elClassement = $('classement-liste');
 champNom.value = lireNomSauvegarde();
 champNom.addEventListener('input', () => sauvegarderNom(champNom.value));
+
+// Les vitesses s'appellent facile / normal / difficile dans le code et les scores
+const NOMS_VITESSE = { facile: 'Lent', normal: 'Moyen', difficile: 'Rapide' };
 
 function afficherClassement(liste) {
   elClassement.textContent = '';
@@ -139,7 +168,7 @@ function afficherClassement(liste) {
     const badge = document.createElement('span');
     const diff = entree.difficulte || 'normal';
     badge.className = `classement-badge ${diff}`;
-    badge.textContent = diff;
+    badge.textContent = NOMS_VITESSE[diff] || diff;
 
     const score = document.createElement('span');
     score.className = 'classement-score';
@@ -248,6 +277,22 @@ async function lancer() {
 boutonsDiff.forEach((btn) => {
   btn.addEventListener('click', () => appliquerDifficulte(btn.dataset.difficulte));
 });
+
+/** Choix du niveau depuis l'accueil : on reconstruit le parcours et ses bonus. */
+function choisirNiveau(numero) {
+  if (Number(numero) === niveau.numero) return;
+  niveau.charger(numero);
+  bonus.retirer();
+  bonus = createBonuses(scene, niveau.bonus, game);
+  replacerBoule();
+  try { localStorage.setItem(CLE_NIVEAU, String(niveau.numero)); } catch { /* rien */ }
+  majBoutonsNiveau();
+}
+boutonsNiveau.forEach((btn) => {
+  if (btn.disabled) return; // niveaux pas encore construits
+  btn.addEventListener('click', () => choisirNiveau(btn.dataset.niveau));
+});
+majBoutonsNiveau();
 $('btn-jouer').addEventListener('click', lancer);
 $('btn-rejouer').addEventListener('click', nouvellePartie);
 $('btn-quitter').addEventListener('click', retourAccueil);
@@ -374,8 +419,9 @@ function image(maintenant) {
     if (game.etat === 'titre') {
       // Écran titre : la caméra tourne autour du départ
       const a = horloge * 0.15;
-      camera.position.set(Math.sin(a) * 26 + 8, 16, Math.cos(a) * 26 - 25);
-      camera.lookAt(10, 0, -32);
+      const [vx, vy, vz] = niveau.vue; // centre du niveau choisi
+      camera.position.set(vx - 2 + Math.sin(a) * 26, vy + 16, vz + 7 + Math.cos(a) * 26);
+      camera.lookAt(vx, vy, vz);
     }
   }
 
