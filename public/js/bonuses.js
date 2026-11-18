@@ -80,5 +80,9 @@ export function createBonuses(scene, liste, game) {
     reset() {
       for (const it of items) { it.actif = true; it.mesh.visible = true; }
     },
+    /** Changement de niveau : enlève ces bonus de la scène. */
+    retirer() {
+      for (const it of items) scene.remove(it.mesh);
+    },
   };
 }

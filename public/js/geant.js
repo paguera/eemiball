@@ -19,9 +19,9 @@ const DUREE_MESSAGE = 3.5; // secondes par message
 
 // Messages de la télé. Chaque ligne reçoit l'état du jeu et renvoie 1 à 3 lignes de texte.
 // Pour en ajouter un : ajoute une ligne ici.
-const NOMS_DIFFICULTE = { facile: 'FACILE', normal: 'NORMAL', difficile: 'DIFFICILE' };
+const NOMS_DIFFICULTE = { facile: 'VITESSE LENTE', normal: 'VITESSE MOYENNE', difficile: 'VITESSE RAPIDE' };
 const MESSAGES = [
-  (j) => ['NIVEAU 1', NOMS_DIFFICULTE[j.difficulte] || 'NORMAL'],
+  (j) => [`NIVEAU ${j.niveau || 1}`, NOMS_DIFFICULTE[j.difficulte] || 'VITESSE MOYENNE'],
   () => ['RACHÈTE', 'DES TOKENS !'],
   (j) => (j.etat === 'jeu' ? ['TON TEMPS', `${j.temps.toFixed(1)} s`] : ['PRÊT ?', 'APPUIE SUR', 'JOUER']),
   () => ['COURS À 9H', 'DÉPÊCHE-TOI !'],
