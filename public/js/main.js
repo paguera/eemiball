@@ -8,6 +8,7 @@ import { Controls } from './controls.js';
 import { createPhysics, RAYON_BOULE } from './physics.js';
 import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
+import { createGeant } from './geant.js';
 
 const DUREE = 60; // secondes pour arriver à l'école
 const $ = (id) => document.getElementById(id);
@@ -93,6 +94,7 @@ const game = {
   },
 };
 const bonus = createBonuses(scene, niveau.bonus, game);
+const geant = createGeant(scene);
 
 let cap = niveau.capDepart; // direction de la caméra (radians)
 const posCamera = new THREE.Vector3();
@@ -111,6 +113,7 @@ function nouvellePartie() {
   game.chutes = 0;
   bonus.reset();
   replacerBoule();
+  geant.update(0, horloge, boule.position, cap, camera, true);
   controles.calibrer();
   game.etat = 'jeu';
   $('ecran-titre').classList.add('cache');
@@ -241,8 +244,8 @@ let horloge = 0;
 
 function image(maintenant) {
   requestAnimationFrame(image);
-  const dt = Math.min((maintenant - dernier) / 1000, 0.05);
-  dernier = maintenant;
+  const dt = Math.max(0, Math.min((maintenant - dernier) / 1000, 0.05));
+  dernier = Math.max(dernier, maintenant);
   horloge += dt;
 
   controles.update(dt);
@@ -270,9 +273,11 @@ function image(maintenant) {
       finDePartie(false);
     }
     placerCamera(dt);
+    geant.update(dt, horloge, boule.position, cap, camera);
     majHUD();
   } else {
     bonus.update(dt, horloge, null);
+    geant.update(dt, horloge, null, cap, camera);
     if (game.etat === 'titre') {
       // Écran titre : la caméra tourne autour du départ
       const a = horloge * 0.15;
