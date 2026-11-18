@@ -190,7 +190,7 @@ export function creerUniversCode(scene) {
     '$ node eemi-ball.js',
     '> Chargement de Lyon... OK',
     '> Objectif : rejoindre l\'EEMI',
-    '> Penche ton téléphone ▶',
+    '>  ton téléphone ▶',
   ], true);
   const terminal = new THREE.Mesh(
     new THREE.PlaneGeometry(8, 8 * rTerm),

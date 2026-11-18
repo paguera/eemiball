@@ -12,9 +12,9 @@ const FICHIERS = {
 };
 
 const MUSIQUES = {
-  facile:    'sons/musique-facile.mp3',
-  normal:    'sons/musique-normal-1.mp3',
-  difficile: 'sons/musique-difficile.mp3',
+  1: 'sons/musique-facile.mp3',
+  2: 'sons/musique-normal-2.mp3',
+  3: 'sons/musique-difficile.mp3',
 };
 
 const VOLUME_MUSIQUE = 0.35;
@@ -119,10 +119,10 @@ export function createAudio() {
   }
 
   /**
-   * Lance la musique d'ambiance correspondant au niveau de difficulté.
+   * Lance la musique d'ambiance correspondant au numéro du niveau (1, 2 ou 3).
    */
-  function lancerMusique(difficulte = 'normal') {
-    const cle = (difficulte in musiques) ? difficulte : 'normal';
+  function lancerMusique(numeroNiveau = 1) {
+    const cle = (numeroNiveau in musiques) ? numeroNiveau : 1;
     const cible = musiques[cle];
     if (musiqueActive && musiqueActive !== cible && !musiqueActive.paused) {
       musiqueActive.pause();
