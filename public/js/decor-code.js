@@ -91,8 +91,9 @@ function rectArrondi(ctx, x, y, l, h, rHaut, rBas = rHaut) {
 function textureEditeur(titre, lignes, terminal) {
   const l = 512, hLigne = 42, h = 64 + lignes.length * hLigne + 24;
   const c = document.createElement('canvas');
-  c.width = l; c.height = h;
+  c.width = l / 2; c.height = Math.round(h / 2);
   const ctx = c.getContext('2d');
+  ctx.scale(0.5, 0.5);
   const r = 18;
   ctx.fillStyle = terminal ? 'rgba(12, 14, 18, 0.92)' : C.fond;
   rectArrondi(ctx, 0, 0, l, h, r, r);
@@ -123,41 +124,32 @@ function textureEditeur(titre, lignes, terminal) {
   });
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
+  t.magFilter = THREE.LinearFilter;
   return { texture: t, rapport: h / l };
 }
 
 function textureSymbole(texte, couleur) {
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = 128;
   const ctx = c.getContext('2d');
-  ctx.font = `bold 170px ${POLICE}`;
+  ctx.font = `bold 85px ${POLICE}`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.shadowColor = couleur; ctx.shadowBlur = 24;
   ctx.fillStyle = couleur;
-  ctx.fillText(texte, 128, 136);
+  ctx.fillText(texte, 64, 68);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
+  t.magFilter = THREE.LinearFilter;
   return t;
 }
 
-/** Ciel en dégradé (violet en haut → bleu → pêche à l'horizon : coucher de soleil sur Lyon). */
+/** Ciel et brume (couleur directe compatible tous GPU mobiles / GrapheneOS). */
 function cielDegrade(scene) {
-  const c = document.createElement('canvas');
-  c.width = 2; c.height = 512;
-  const ctx = c.getContext('2d');
-  const g = ctx.createLinearGradient(0, 0, 0, 512);
-  g.addColorStop(0, '#2b2a6b');
-  g.addColorStop(0.3, '#5f7fd6');
-  g.addColorStop(0.47, '#b9c6f0');
-  g.addColorStop(0.5, '#ffd2b3');
-  g.addColorStop(0.62, '#e7b9a0');
-  g.addColorStop(1, '#8f7f86');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 2, 512);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  scene.background = t;
-  scene.fog = new THREE.Fog(0xf1cdb6, 70, 280);
+  scene.background = new THREE.Color(0x5f7fd6);
+  scene.fog = new THREE.Fog(0xd8bfcc, 80, 260);
 }
 
 export function creerUniversCode(scene) {
@@ -206,28 +198,18 @@ export function creerUniversCode(scene) {
   scene.add(terminal);
   animes.push({ obj: terminal, baseY: 3.6, phase: 0, ampl: 0.15, vitesse: 1 });
 
-  // --- Particules de données qui montent depuis la ville ---
-  const N = 500;
+  // --- Particules de données qui montent depuis la ville (sans ré-upload de buffer à chaque image) ---
+  const N = 120;
   const positions = new Float32Array(N * 3);
-  const vitesses = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     positions[i * 3] = -60 + Math.random() * 170;
     positions[i * 3 + 1] = -55 + Math.random() * 90;
     positions[i * 3 + 2] = -140 + Math.random() * 170;
-    vitesses[i] = 1.5 + Math.random() * 3;
   }
   const geoParticules = new THREE.BufferGeometry();
   geoParticules.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const pointTex = (() => {
-    const c = document.createElement('canvas'); c.width = c.height = 32;
-    const ctx = c.getContext('2d');
-    const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.4, 'rgba(160,255,200,0.8)'); g.addColorStop(1, 'rgba(0,255,140,0)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 32, 32);
-    return new THREE.CanvasTexture(c);
-  })();
   const particules = new THREE.Points(geoParticules, new THREE.PointsMaterial({
-    color: 0x7dffb5, size: 0.9, map: pointTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    color: 0x7dffb5, size: 0.7, transparent: true, opacity: 0.8, depthWrite: false,
   }));
   scene.add(particules);
 
@@ -238,12 +220,7 @@ export function creerUniversCode(scene) {
         a.obj.position.y = a.baseY + Math.sin(t * a.vitesse + a.phase) * a.ampl;
         if (a.tourne) a.obj.rotation.y += dt * a.tourne;
       }
-      for (let i = 0; i < N; i++) {
-        let y = positions[i * 3 + 1] + vitesses[i] * dt;
-        if (y > 35) y = -55;
-        positions[i * 3 + 1] = y;
-      }
-      geoParticules.attributes.position.needsUpdate = true;
+      particules.position.y = (t * 2) % 30;
     },
   };
 }

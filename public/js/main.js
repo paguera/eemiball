@@ -17,24 +17,33 @@ import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauv
 const $ = (id) => document.getElementById(id);
 // Réglage « réduire les animations » du téléphone / de l'ordinateur
 const mouvementReduit = matchMedia('(prefers-reduced-motion: reduce)');
+const estMobile = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 
 // ---------------- Rendu ----------------
-const renderer = new THREE.WebGLRenderer({ canvas: $('jeu'), antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const canvasJeu = $('jeu');
+canvasJeu.addEventListener('webglcontextlost', (e) => e.preventDefault(), false);
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvasJeu,
+  antialias: !estMobile,
+  powerPreference: 'high-performance',
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, estMobile ? 1.25 : 2));
+renderer.shadowMap.enabled = !estMobile;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9fd3ff);
-scene.fog = new THREE.Fog(0x9fd3ff, 45, 150);
+scene.background = new THREE.Color(0x5f7fd6);
+scene.fog = new THREE.Fog(0xd8bfcc, 80, 260);
 
-const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 400);
+const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 350);
 
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 1.3));
 const soleil = new THREE.DirectionalLight(0xffffff, 1.8);
-soleil.castShadow = true;
-soleil.shadow.mapSize.set(1024, 1024);
-Object.assign(soleil.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 70 });
+soleil.castShadow = !estMobile;
+if (!estMobile) {
+  soleil.shadow.mapSize.set(1024, 1024);
+  Object.assign(soleil.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 70 });
+}
 scene.add(soleil, soleil.target);
 
 function redimensionner() {

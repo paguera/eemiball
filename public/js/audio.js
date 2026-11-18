@@ -25,7 +25,7 @@ export function createAudio() {
   const sons = {};
   for (const [nom, url] of Object.entries(FICHIERS)) {
     const a = new Audio(url);
-    a.preload = 'auto';
+    a.preload = 'metadata';
     sons[nom] = a;
   }
 
@@ -33,7 +33,7 @@ export function createAudio() {
   for (const [niveau, url] of Object.entries(MUSIQUES)) {
     const m = new Audio(url);
     m.loop = true;
-    m.preload = 'auto';
+    m.preload = 'none';
     m.volume = VOLUME_MUSIQUE;
     musiques[niveau] = m;
   }
@@ -42,7 +42,7 @@ export function createAudio() {
   // Boucle continue pour le roulement de la boule
   const roulement = new Audio('sons/roulement80.mp3');
   roulement.loop = true;
-  roulement.preload = 'auto';
+  roulement.preload = 'metadata';
   roulement.volume = 0;
 
   let muet = false;

@@ -22,6 +22,9 @@ function canvasTexture(l, h, dessiner) {
   dessiner(c.getContext('2d'), l, h);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
+  t.magFilter = THREE.LinearFilter;
   return t;
 }
 
@@ -61,7 +64,7 @@ function ajouterImmeubles(scene, liste, texture) {
   if (!liste.length) return;
   const corps = new THREE.InstancedMesh(
     new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9 }),
+    new THREE.MeshLambertMaterial({ map: texture }),
     liste.length,
   );
   const avecToit = liste.filter((b) => b.toit);
@@ -69,7 +72,7 @@ function ajouterImmeubles(scene, liste, texture) {
   toitGeo.rotateY(Math.PI / 4); // pyramide à base carrée = toit à quatre pans
   const toits = new THREE.InstancedMesh(
     toitGeo,
-    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, flatShading: true }),
+    new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
     Math.max(1, avecToit.length),
   );
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3();
