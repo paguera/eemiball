@@ -20,7 +20,7 @@ export const NIVEAUX = [
   // ------------------------------------------------------------------
   {
     numero: 1,
-    nom: 'Presqu\'île',
+    nom: 'Atelier code',
     univers: 'code',          // décor : fenêtres de code, terminal, particules
     texture: 'code',          // plateformes quadrillées avec lignes de code
     description: 'Bosses, pont étroit, tremplin et virage jusqu\'à l\'EEMI.',
