@@ -42,8 +42,19 @@ const MESSAGES_GRAPHISME = [
   () => ['KERNING', 'À REVOIR'],
   () => ['RVB ≠ CMJN'],
 ];
+// Messages en plus au niveau 3 (univers marketing)
+const MESSAGES_MARKETING = [
+  () => ['ACHÈTE', 'MAINTENANT !'],
+  () => ['OFFRE', 'LIMITÉE', '-50 %'],
+  () => ['TAUX DE CLIC', '0,2 %'],
+  () => ['CIBLE :', 'TOI'],
+  () => ['LIKE &', 'ABONNE-TOI'],
+  () => ['PUB', '(pas skippable)'],
+];
 function listeMessages(j) {
-  return j.niveau === 2 ? [...MESSAGES, ...MESSAGES_GRAPHISME] : MESSAGES;
+  if (j.niveau === 2) return [...MESSAGES, ...MESSAGES_GRAPHISME];
+  if (j.niveau === 3) return [...MESSAGES, ...MESSAGES_MARKETING];
+  return MESSAGES;
 }
 const VITESSE_SUIVI = 0.35;
 

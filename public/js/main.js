@@ -140,16 +140,24 @@ const cibleCamera = new THREE.Vector3();
 // ---------------- Classement & joueur ----------------
 const champNom = $('champ-nom');
 const elClassement = $('classement-liste');
+const elClassementTitre = $('classement-titre');
 champNom.value = lireNomSauvegarde();
 champNom.addEventListener('input', () => sauvegarderNom(champNom.value));
 
 // Les vitesses s'appellent facile / normal / difficile dans le code et les scores
 const NOMS_VITESSE = { facile: 'Lent', normal: 'Moyen', difficile: 'Rapide' };
 
+function majTitreClassement() {
+  if (elClassementTitre) {
+    elClassementTitre.textContent = `Classement · Niveau ${niveau.numero} (${niveau.nom})`;
+  }
+}
+
 function afficherClassement(liste) {
+  majTitreClassement();
   elClassement.textContent = '';
   if (!liste || !liste.length) {
-    elClassement.textContent = 'Aucun score enregistré pour le moment.';
+    elClassement.textContent = `Aucun score pour le niveau ${niveau.numero}.`;
     return;
   }
   const medailles = ['🥇', '🥈', '🥉'];
@@ -184,8 +192,10 @@ function afficherClassement(liste) {
 }
 
 async function rafraichirClassement() {
-  const liste = await chargerClassement();
-  afficherClassement(liste);
+  majTitreClassement();
+  const num = niveau.numero;
+  const liste = await chargerClassement(num);
+  if (niveau.numero === num) afficherClassement(liste);
 }
 rafraichirClassement();
 
@@ -238,12 +248,13 @@ async function finDePartie() {
   const score = calculerScore(game.temps, diff, game.chutes);
   $('fin-titre').textContent = "Arrivé à l'EEMI ! 🎓";
   $('fin-texte').textContent =
-    `${nom} · Score : ${score} pts · Temps : ${game.temps.toFixed(2)} s · Chutes : ${game.chutes}`;
+    `Niveau ${niveau.numero} (${niveau.nom}) · ${nom} · Score : ${score} pts · Temps : ${game.temps.toFixed(2)} s · Chutes : ${game.chutes}`;
   const liste = await envoyerScore({
     nom,
     score,
     temps: game.temps,
     difficulte: diff,
+    niveau: niveau.numero,
     chutes: game.chutes,
   });
   afficherClassement(liste);
@@ -287,6 +298,7 @@ function choisirNiveau(numero) {
   replacerBoule();
   try { localStorage.setItem(CLE_NIVEAU, String(niveau.numero)); } catch { /* rien */ }
   majBoutonsNiveau();
+  rafraichirClassement();
 }
 boutonsNiveau.forEach((btn) => {
   if (btn.disabled) return; // niveaux pas encore construits
