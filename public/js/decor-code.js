@@ -154,6 +154,9 @@ function cielDegrade(scene) {
 
 export function creerUniversCode(scene) {
   cielDegrade(scene);
+  // Tout l'univers code est dans un groupe : on peut le cacher sur les autres niveaux
+  const groupe = new THREE.Group();
+  scene.add(groupe);
   const animes = [];
   const centre = new THREE.Vector3(20, 4, -35); // les fenêtres regardent vers le parcours
 
@@ -167,7 +170,7 @@ export function creerUniversCode(scene) {
     );
     panneau.position.set(...s.pos);
     panneau.lookAt(centre.x, s.pos[1], centre.z);
-    scene.add(panneau);
+    groupe.add(panneau);
     animes.push({ obj: panneau, baseY: s.pos[1], phase: s.pos[0] * 0.3, ampl: 0.6, vitesse: 0.6 });
   }
 
@@ -178,7 +181,7 @@ export function creerUniversCode(scene) {
       new THREE.MeshBasicMaterial({ map: textureSymbole(s.texte, s.couleur), transparent: true, side: THREE.DoubleSide, depthWrite: false }),
     );
     symbole.position.set(...s.pos);
-    scene.add(symbole);
+    groupe.add(symbole);
     animes.push({ obj: symbole, baseY: s.pos[1], phase: s.pos[2] * 0.1, ampl: 1.2, vitesse: 0.4, tourne: 0.35 });
   }
 
@@ -195,7 +198,7 @@ export function creerUniversCode(scene) {
   );
   terminal.position.set(7.5, 3.6, -5); // à droite : on garde la vue sur Fourvière à gauche
   terminal.rotation.y = -0.45;
-  scene.add(terminal);
+  groupe.add(terminal);
   animes.push({ obj: terminal, baseY: 3.6, phase: 0, ampl: 0.15, vitesse: 1 });
 
   // --- Particules de données qui montent depuis la ville (sans ré-upload de buffer à chaque image) ---
@@ -211,9 +214,10 @@ export function creerUniversCode(scene) {
   const particules = new THREE.Points(geoParticules, new THREE.PointsMaterial({
     color: 0x7dffb5, size: 0.7, transparent: true, opacity: 0.8, depthWrite: false,
   }));
-  scene.add(particules);
+  groupe.add(particules);
 
   return {
+    groupe,
     /** Appelé à chaque image : fait flotter le code et monter les données. */
     animer(t, dt) {
       for (const a of animes) {

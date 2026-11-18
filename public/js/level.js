@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { creerLyon } from './decor-lyon.js';
 import { creerUniversCode } from './decor-code.js';
+import { creerUniversGraphisme } from './decor-graphisme.js';
 import { trouverNiveau } from './niveaux.js';
 
 const HAUT = new THREE.Vector3(0, 1, 0);
@@ -27,6 +28,29 @@ function textureGrille() {
   lignes.forEach(([x, l], i) => ctx.fillRect(x + 6, 14 + i * 13, l, 6));
   ctx.strokeStyle = 'rgba(0,0,0,0.18)';
   ctx.lineWidth = 6;
+  ctx.strokeRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
+// Texture « papier millimétré » (niveau 2, univers graphisme) : 1 carreau = 2 m
+function textureMillimetre() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.strokeStyle = 'rgba(0, 120, 200, 0.22)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 128; i += 16) {
+    ctx.beginPath(); ctx.moveTo(i + 0.5, 0); ctx.lineTo(i + 0.5, 128); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i + 0.5); ctx.lineTo(128, i + 0.5); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(0, 90, 170, 0.45)';
+  ctx.lineWidth = 5;
   ctx.strokeRect(0, 0, 128, 128);
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -55,7 +79,8 @@ function textureTexte(lignes, fond, couleur, l = 512, h = 256) {
 }
 
 export function buildLevel(scene, world, solMat) {
-  const grille = textureGrille();
+  const textures = { code: textureGrille(), millimetre: textureMillimetre() };
+  let grille = textures.code; // texture des plateformes du niveau en cours
 
   // Ce qui appartient au parcours en cours (démonté à chaque changement de niveau)
   let groupe = null;
@@ -194,7 +219,12 @@ export function buildLevel(scene, world, solMat) {
 
   // ---------------- DÉCOR : Lyon en contrebas + univers dev/coding (une seule fois) ----------------
   creerLyon(scene);
-  const universCode = creerUniversCode(scene);
+  // Un univers par niveau : seul celui du niveau en cours est affiché et animé
+  const univers = {
+    code: creerUniversCode(scene),
+    graphisme: creerUniversGraphisme(scene),
+  };
+  let universActuel = univers.code;
 
   // ---------------- Chargement d'un niveau ----------------
   let niveauActuel = null;
@@ -212,6 +242,9 @@ export function buildLevel(scene, world, solMat) {
   function charger(numero) {
     demonter();
     niveauActuel = trouverNiveau(numero);
+    grille = textures[niveauActuel.texture] || textures.code;
+    universActuel = univers[niveauActuel.univers] || univers.code;
+    for (const u of Object.values(univers)) u.groupe.visible = u === universActuel;
     groupe = new THREE.Group();
     scene.add(groupe);
     niveauActuel.construire({ slab, dalle, mur, bosse });
@@ -230,7 +263,7 @@ export function buildLevel(scene, world, solMat) {
     get bonus() { return niveauActuel.bonus; },
     yChute: -8,            // en dessous : on a chuté
     /** Animation du décor (code qui flotte, particules), appelée à chaque image. */
-    animer(t, dt) { universCode.animer(t, dt); },
+    animer(t, dt) { universActuel.animer(t, dt); },
     /** Vrai quand la boule passe sous le portail (calcul dans le repère de l'arrivée). */
     estArrive(p) {
       const { x, y, z, angle } = niveauActuel.arrivee;

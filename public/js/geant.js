@@ -34,6 +34,17 @@ const MESSAGES = [
   () => ['BONJOUR', 'LYON !'],
   () => ['TOKENS', 'ÉPUISÉS', 'PASSE PRO'],
 ];
+// Messages en plus au niveau 2 (univers graphisme)
+const MESSAGES_GRAPHISME = [
+  () => ['CTRL+Z', 'CTRL+Z', 'CTRL+Z'],
+  () => ['COMIC SANS', 'DÉTECTÉE !'],
+  () => ['EXPORT', 'final_v7.png'],
+  () => ['KERNING', 'À REVOIR'],
+  () => ['RVB ≠ CMJN'],
+];
+function listeMessages(j) {
+  return j.niveau === 2 ? [...MESSAGES, ...MESSAGES_GRAPHISME] : MESSAGES;
+}
 const VITESSE_SUIVI = 0.35;
 
 // --- Arrivée en début de niveau ---
@@ -219,12 +230,14 @@ export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', 
       // Télé : message suivant toutes les DUREE_MESSAGE secondes, redessin ~8 fois par seconde
       if (debutMessage === -Infinity) debutMessage = t;
       if (t - debutMessage > DUREE_MESSAGE) {
-        indexMessage = (indexMessage + 1) % MESSAGES.length;
+        indexMessage = (indexMessage + 1) % listeMessages(lireEtatJeu()).length;
         debutMessage = t;
       }
       if (t >= prochainDessin) {
         prochainDessin = t + 0.5;
-        const lignes = MESSAGES[indexMessage](lireEtatJeu());
+        const etat = lireEtatJeu();
+        const liste = listeMessages(etat);
+        const lignes = liste[indexMessage % liste.length](etat);
         const glitch = !calme && t - debutMessage < 0.25;
         tele.dessiner(lignes, tele.couleurs[indexMessage % tele.couleurs.length], t, glitch);
       }
