@@ -180,6 +180,7 @@ function nouvellePartie() {
   $('ecran-titre').classList.add('cache');
   $('ecran-fin').classList.add('cache');
   $('hud').classList.remove('cache');
+  audio.lancerMusique(difficulteActuelle() || 'normal');
   audio.jouer('depart');
   game.flash('Partez !');
 }

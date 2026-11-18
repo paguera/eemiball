@@ -11,6 +11,14 @@ const FICHIERS = {
   impact:   'sons/impact.mp3',
 };
 
+const MUSIQUES = {
+  facile:    'sons/musique-facile.mp3',
+  normal:    'sons/musique-normal-1.mp3',
+  difficile: 'sons/musique-difficile.mp3',
+};
+
+const VOLUME_MUSIQUE = 0.35;
+
 const borner = (v, min, max) => Math.max(min, Math.min(max, v));
 
 export function createAudio() {
@@ -20,6 +28,16 @@ export function createAudio() {
     a.preload = 'auto';
     sons[nom] = a;
   }
+
+  const musiques = {};
+  for (const [niveau, url] of Object.entries(MUSIQUES)) {
+    const m = new Audio(url);
+    m.loop = true;
+    m.preload = 'auto';
+    m.volume = VOLUME_MUSIQUE;
+    musiques[niveau] = m;
+  }
+  let musiqueActive = null;
 
   // Boucle continue pour le roulement de la boule
   const roulement = new Audio('sons/roulement80.mp3');
@@ -100,20 +118,49 @@ export function createAudio() {
     }
   }
 
+  /**
+   * Lance la musique d'ambiance correspondant au niveau de difficulté.
+   */
+  function lancerMusique(difficulte = 'normal') {
+    const cle = (difficulte in musiques) ? difficulte : 'normal';
+    const cible = musiques[cle];
+    if (musiqueActive && musiqueActive !== cible && !musiqueActive.paused) {
+      musiqueActive.pause();
+    }
+    musiqueActive = cible;
+    musiqueActive.currentTime = 0;
+    musiqueActive.volume = VOLUME_MUSIQUE;
+    if (!muet) {
+      musiqueActive.play().catch(() => {});
+    }
+  }
+
   function arreterTout() {
     roulement.volume = 0;
     if (!roulement.paused) roulement.pause();
+    if (musiqueActive) {
+      if (!musiqueActive.paused) musiqueActive.pause();
+      musiqueActive.currentTime = 0;
+      musiqueActive = null;
+    }
   }
 
   function basculerMuet() {
     muet = !muet;
-    if (muet) arreterTout();
+    if (muet) {
+      roulement.volume = 0;
+      if (!roulement.paused) roulement.pause();
+      if (musiqueActive && !musiqueActive.paused) musiqueActive.pause();
+    } else if (musiqueActive && musiqueActive.paused) {
+      musiqueActive.play().catch(() => {});
+    }
     return muet;
   }
 
   return {
     debloquer,
     jouer,
+    lancerMusique,
     impact,
     updateRoulement,
     arreterTout,
