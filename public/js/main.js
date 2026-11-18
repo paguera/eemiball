@@ -47,6 +47,34 @@ if (!estMobile) {
 }
 scene.add(soleil, soleil.target);
 
+/**
+ * Sur téléphone : remplace les matériaux « réalistes » (MeshStandardMaterial, calcul de
+ * lumière coûteux pour chaque pixel) par des matériaux Lambert, bien plus légers.
+ * Le rendu reste presque identique (les surfaces du jeu sont mates).
+ */
+const versionsLegeres = new Map();
+function allegerMateriaux() {
+  if (!estMobile) return;
+  const leger = (m) => {
+    if (!m || m.type !== 'MeshStandardMaterial') return m;
+    if (!versionsLegeres.has(m)) {
+      const l = new THREE.MeshLambertMaterial();
+      for (const cle of ['color', 'emissive']) l[cle].copy(m[cle]);
+      for (const cle of ['map', 'emissiveMap', 'alphaMap', 'emissiveIntensity', 'transparent', 'opacity',
+        'alphaTest', 'side', 'depthWrite', 'depthTest', 'vertexColors', 'flatShading', 'toneMapped', 'fog',
+        'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits', 'visible', 'blending']) l[cle] = m[cle];
+      l.name = m.name;
+      versionsLegeres.set(m, l);
+      m.addEventListener('dispose', () => { l.dispose(); versionsLegeres.delete(m); });
+    }
+    return versionsLegeres.get(m);
+  };
+  scene.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material = Array.isArray(o.material) ? o.material.map(leger) : leger(o.material);
+  });
+}
+
 function redimensionner() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
@@ -295,6 +323,7 @@ function choisirNiveau(numero) {
   niveau.charger(numero);
   bonus.retirer();
   bonus = createBonuses(scene, niveau.bonus, game);
+  allegerMateriaux();
   replacerBoule();
   try { localStorage.setItem(CLE_NIVEAU, String(niveau.numero)); } catch { /* rien */ }
   majBoutonsNiveau();
@@ -449,9 +478,10 @@ function image(maintenant) {
 
 physique.replacer(niveau.depart);
 boule.position.copy(physique.boule.position);
+allegerMateriaux();
 requestAnimationFrame(image);
 window.__jeuPret = true;
 // Outils de test : seulement en local (localhost), jamais sur le site en ligne
 if (['localhost', '127.0.0.1'].includes(location.hostname)) {
-  window.__debug = { physique, game, controles, params, image, geant, camera, scene };
+  window.__debug = { physique, game, controles, params, image, geant, camera, scene, renderer, niveau, bouleVisuelle, bonus };
 }

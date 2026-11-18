@@ -109,6 +109,8 @@ export function buildLevel(scene, world, solMat) {
   let groupe = null;
   let corpsParcours = [];
   let obstacles = []; // obstacles qui bougent (animés à chaque image)
+  let lots = new Map(); // boîtes fixes du parcours, regroupées par couleur (voir fusionnerBoites)
+  let materiauxParcours = [];
   const ajouterCorps = (b) => { world.addBody(b); corpsParcours.push(b); };
 
   /**
@@ -128,15 +130,17 @@ export function buildLevel(scene, world, solMat) {
     return geo;
   }
 
-  /** Boîte à la fois visible (Three.js) et solide (cannon-es). */
-  function addBox(centre, taille, quat, couleur, options = {}) {
-    const mat = options.materiau || new THREE.MeshStandardMaterial({ color: couleur, map: grille, roughness: 0.85 });
-    const mesh = new THREE.Mesh(geometrieBoite(taille), mat);
-    mesh.position.copy(centre);
-    mesh.quaternion.copy(quat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    groupe.add(mesh);
+  /**
+   * Boîte à la fois visible (Three.js) et solide (cannon-es).
+   * Pour aller plus vite, la partie visible n'est pas créée tout de suite : elle est
+   * mise de côté avec les autres boîtes de la même couleur, puis toutes sont fusionnées
+   * en un seul objet à la fin de la construction (voir fusionnerBoites).
+   */
+  function addBox(centre, taille, quat, couleur) {
+    const geo = geometrieBoite(taille);
+    geo.applyMatrix4(new THREE.Matrix4().compose(centre, quat, new THREE.Vector3(1, 1, 1)));
+    if (!lots.has(couleur)) lots.set(couleur, []);
+    lots.get(couleur).push(geo);
 
     const corps = new CANNON.Body({
       mass: 0,
@@ -146,7 +150,41 @@ export function buildLevel(scene, world, solMat) {
     corps.position.set(centre.x, centre.y, centre.z);
     corps.quaternion.set(quat.x, quat.y, quat.z, quat.w);
     ajouterCorps(corps);
-    return mesh;
+  }
+
+  /** Fusionne des géométries de boîtes (mêmes attributs) en une seule. */
+  function fusionnerGeometries(geos) {
+    const noms = ['position', 'normal', 'uv'];
+    const total = geos.reduce((n, g) => n + g.attributes.position.count, 0);
+    const nbIndex = geos.reduce((n, g) => n + g.index.count, 0);
+    const donnees = noms.map((nom) => new Float32Array(total * geos[0].attributes[nom].itemSize));
+    const index = new Uint32Array(nbIndex);
+    let sommet = 0, i0 = 0;
+    for (const g of geos) {
+      noms.forEach((nom, k) => donnees[k].set(g.attributes[nom].array, sommet * g.attributes[nom].itemSize));
+      const idx = g.index.array;
+      for (let j = 0; j < idx.length; j++) index[i0 + j] = idx[j] + sommet;
+      sommet += g.attributes.position.count;
+      i0 += idx.length;
+      g.dispose();
+    }
+    const geo = new THREE.BufferGeometry();
+    noms.forEach((nom, k) => geo.setAttribute(nom, new THREE.BufferAttribute(donnees[k], geos[0].attributes[nom].itemSize)));
+    geo.setIndex(new THREE.BufferAttribute(index, 1));
+    geo.computeBoundingSphere();
+    return geo;
+  }
+
+  /** Une seule forme par couleur : bien moins d'appels de dessin (important sur téléphone). */
+  function fusionnerBoites() {
+    for (const [couleur, geos] of lots) {
+      const mat = new THREE.MeshStandardMaterial({ color: couleur, map: grille, roughness: 0.85 });
+      materiauxParcours.push(mat);
+      const mesh = new THREE.Mesh(fusionnerGeometries(geos), mat);
+      mesh.castShadow = mesh.receiveShadow = true;
+      groupe.add(mesh);
+    }
+    lots = new Map();
   }
 
   /** Plateforme (plate ou en pente) entre deux points du dessus. */
@@ -320,6 +358,8 @@ export function buildLevel(scene, world, solMat) {
   function demonter() {
     if (!groupe) return;
     groupe.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+    for (const m of materiauxParcours) m.dispose();
+    materiauxParcours = [];
     scene.remove(groupe);
     for (const b of corpsParcours) world.removeBody(b);
     corpsParcours = [];
@@ -337,6 +377,7 @@ export function buildLevel(scene, world, solMat) {
     groupe = new THREE.Group();
     scene.add(groupe);
     niveauActuel.construire({ slab, dalle, mur, bosse, virage, mobile });
+    fusionnerBoites();
     construireArrivee(niveauActuel.arrivee);
   }
 
