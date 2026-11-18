@@ -39,7 +39,9 @@ export function createAudio() {
     if (debloque) return;
     debloque = true;
     roulement.volume = 0;
-    roulement.play().catch(() => {});
+    roulement.play().then(() => {
+      if (roulement.volume <= 0.01) roulement.pause();
+    }).catch(() => {});
   }
 
   /**

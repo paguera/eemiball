@@ -204,14 +204,14 @@ async function finDePartie() {
 
 // ---------------- Boutons ----------------
 async function lancer() {
-  audio.debloquer();
   // 1) Autorisation du gyroscope : doit être la PREMIÈRE chose faite dans le clic (iPhone)
   const ok = await controles.activerGyro();
+  audio.debloquer();
   // 2) Plein écran (Android ; ignoré sur iPhone)
   try {
     if (document.documentElement.requestFullscreen && matchMedia('(pointer: coarse)').matches) {
       await document.documentElement.requestFullscreen();
-      await screen.orientation?.lock?.('portrait').catch(() => {});
+      await screen.orientation?.lock?.('portrait')?.catch?.(() => {});
     }
   } catch { /* pas grave */ }
 

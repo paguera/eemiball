@@ -27,6 +27,10 @@
       var d = document.getElementById('erreur');
       if (d) { d.hidden = false; d.textContent = 'Erreur : ' + (e.message || e); }
     });
+    window.addEventListener('unhandledrejection', function (e) {
+      var d = document.getElementById('erreur');
+      if (d) { d.hidden = false; d.textContent = 'Erreur : ' + (e.reason && e.reason.message || e.reason || e); }
+    });
     setTimeout(function () {
       if (!window.__jeuPret) {
         var d = document.getElementById('erreur');

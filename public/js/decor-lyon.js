@@ -89,7 +89,8 @@ function ajouterImmeubles(scene, liste, texture) {
     }
   });
   toits.count = iToit;
-  scene.add(corps, toits);
+  scene.add(corps);
+  if (iToit > 0) scene.add(toits);
 }
 
 export function creerLyon(scene) {

@@ -71,6 +71,22 @@ function colorer(ligne, terminal) {
   return morceaux;
 }
 
+/** Dessine un rectangle à coins arrondis (compatible tous navigateurs mobiles). */
+function rectArrondi(ctx, x, y, l, h, rHaut, rBas = rHaut) {
+  ctx.beginPath();
+  ctx.moveTo(x + rHaut, y);
+  ctx.lineTo(x + l - rHaut, y);
+  ctx.quadraticCurveTo(x + l, y, x + l, y + rHaut);
+  ctx.lineTo(x + l, y + h - rBas);
+  ctx.quadraticCurveTo(x + l, y + h, x + l - rBas, y + h);
+  ctx.lineTo(x + rBas, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rBas);
+  ctx.lineTo(x, y + rHaut);
+  ctx.quadraticCurveTo(x, y, x + rHaut, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
 /** Dessine une fenêtre d'éditeur (barre de titre, numéros de ligne, code coloré). */
 function textureEditeur(titre, lignes, terminal) {
   const l = 512, hLigne = 42, h = 64 + lignes.length * hLigne + 24;
@@ -79,9 +95,9 @@ function textureEditeur(titre, lignes, terminal) {
   const ctx = c.getContext('2d');
   const r = 18;
   ctx.fillStyle = terminal ? 'rgba(12, 14, 18, 0.92)' : C.fond;
-  ctx.beginPath(); ctx.roundRect(0, 0, l, h, r); ctx.fill();
+  rectArrondi(ctx, 0, 0, l, h, r, r);
   ctx.fillStyle = C.barre;
-  ctx.beginPath(); ctx.roundRect(0, 0, l, 44, [r, r, 0, 0]); ctx.fill();
+  rectArrondi(ctx, 0, 0, l, 44, r, 0);
   ['#ff5f57', '#febc2e', '#28c840'].forEach((col, i) => {
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(26 + i * 24, 22, 7, 0, Math.PI * 2); ctx.fill();
   });
@@ -140,7 +156,6 @@ function cielDegrade(scene) {
   ctx.fillStyle = g; ctx.fillRect(0, 0, 2, 512);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.mapping = THREE.EquirectangularReflectionMapping;
   scene.background = t;
   scene.fog = new THREE.Fog(0xf1cdb6, 70, 280);
 }
