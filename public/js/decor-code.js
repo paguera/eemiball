@@ -22,7 +22,7 @@ const POLICE = '"Cascadia Code", "Fira Code", Consolas, "Courier New", monospace
 const SNIPPETS = [
   { pos: [-16, 9, -14], titre: 'lyon.js', lignes: ['const ville = "Lyon";', 'const ecole = "EEMI";', 'let retard = false;'] },
   { pos: [14, 11, -24], titre: 'boucle.js', lignes: ['while (!arrive) {', '  rouler();', '}'] },
-  { pos: [-15, 13, -40], titre: 'bonus.js', lignes: ['if (cafe) {', '  vitesse *= 1.6;', '}'] },
+  { pos: [-15, 13, -40], titre: 'bonus.js', lignes: ['if (canette) {', '  vitesse *= 1.6;', '}'] },
   { pos: [12, 15, -46], titre: 'todo.js', lignes: ['// TODO : arriver avant 9h', '// FIXME : ne pas tomber'] },
   { pos: [-12, 12, -70], titre: 'fourviere.js', lignes: ['function monter(colline) {', '  return "basilique";', '}'] },
   { pos: [16, 12, -76], titre: 'terminal', terminal: true, lignes: ['$ git commit -m "en route"', '$ git push origin main', '✔ 1 commit envoyé'] },
