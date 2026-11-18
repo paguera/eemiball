@@ -4,20 +4,23 @@
 # 3. docker compose up -d
 services:
   web:
-    image: caddy:2.8
+    image: docker.io/library/caddy:2.8
+    container_name: eemiball
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
     environment:
-      DOMAIN: ${DOMAIN:?Mets ton domaine dans le fichier .env}
+      DOMAIN: http://${DOMAIN:?Mets ton domaine dans le fichier .env}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./public:/srv:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,Z
+      - ./public:/srv:ro,Z
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - nas-net
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  nas-net:
+    external: true
