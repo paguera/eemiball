@@ -60,18 +60,30 @@ const MESSAGES_GRAPHISME = [
   () => ['ALIGNE', 'TES CALQUES'],
   () => ['CANETTE', '= BOOST ×1.6'],
 ];
-// Messages en plus au niveau 3 (univers marketing)
+// Messages du niveau 3 (univers marketing) : ils remplacent les messages habituels
 const MESSAGES_MARKETING = [
+  (j) => [`NIVEAU ${j.niveau || 3}`, NOMS_DIFFICULTE[j.difficulte] || 'VITESSE MOYENNE'],
   () => ['ACHÈTE', 'MAINTENANT !'],
+  (j) => (j.etat === 'jeu' ? ['TEMPS DE', 'CONVERSION', `${j.temps.toFixed(1)} s`] : ['PRÊT ?', 'APPUIE SUR', 'JOUER']),
   () => ['OFFRE', 'LIMITÉE', '-50 %'],
-  () => ['TAUX DE CLIC', '0,2 %'],
   () => ['CIBLE :', 'TOI'],
+  (j) => (j.chutes > 0 ? ['TAUX DE', 'REBOND', `×${j.chutes}`] : ['ZÉRO', 'REBOND', 'BRAVO !']),
   () => ['LIKE &', 'ABONNE-TOI'],
   () => ['PUB', '(pas skippable)'],
+  () => ['TAUX DE CLIC', '0,2 %'],
+  () => ['ENGAGEMENT', '+238 %'],
+  () => ['CONTENU', 'SPONSORISÉ'],
+  () => ['ROI ?', 'ON VERRA', 'PLUS TARD'],
+  () => ['A/B TEST', 'EN COURS…'],
+  () => ['CODE PROMO', 'EEMI10'],
+  () => ['STORY', 'EXPIRE', 'DANS 24 H'],
+  () => ['CANETTE', 'SPONSORISÉE', 'BOOST ×1.6'],
+  () => ['SATISFAIT', 'OU REMBOURSÉ'],
+  () => ['BRAND', 'CONTENT'],
 ];
 function listeMessages(j) {
   if (j.niveau === 2) return MESSAGES_GRAPHISME;
-  if (j.niveau === 3) return [...MESSAGES, ...MESSAGES_MARKETING];
+  if (j.niveau === 3) return MESSAGES_MARKETING;
   return MESSAGES;
 }
 const VITESSE_SUIVI = 0.35;
