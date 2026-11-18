@@ -214,9 +214,7 @@ export function buildLevel(scene, world, solMat) {
     },
     bonus: [
       { type: 'canette', pos: [-1.5, 0.8, -11] },
-      { type: 'cafe',      pos: [0, 3.8, -32.5] },
       { type: 'canette', pos: [0, 3.8, -40.5] },
-      { type: 'cafe',      pos: [11, 2.8, -59] },
       { type: 'canette', pos: [32, 1.3, -61] },
     ],
   };
