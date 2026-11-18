@@ -1,0 +1,9 @@
+# Configuration locale (contient le domaine du serveur)
+.env
+
+# Fichiers de l'éditeur / outils locaux
+.claude/
+.vscode/
+Thumbs.db
+desktop.ini
+.DS_Store

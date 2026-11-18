@@ -1,0 +1,23 @@
+# Mise en ligne d'EEMI Ball avec HTTPS automatique (Caddy + Let's Encrypt)
+# 1. copier .env.example en .env et y mettre le domaine
+# 2. faire pointer le domaine (enregistrement DNS A) vers l'IP du serveur
+# 3. docker compose up -d
+services:
+  web:
+    image: caddy:2.8
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Mets ton domaine dans le fichier .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./public:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

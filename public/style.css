@@ -1,0 +1,113 @@
+/* ====== Base ====== */
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: #1b1f3b; color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; overscroll-behavior: none;
+}
+#jeu { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.cache { display: none !important; }
+
+button {
+  font: inherit; font-weight: 700; color: #fff; cursor: pointer;
+  background: #e6007e; border: 0; border-radius: 999px;
+  padding: 14px 32px; font-size: 1.2rem;
+  box-shadow: 0 4px 0 #8f004e;
+}
+button:active { transform: translateY(2px); box-shadow: 0 2px 0 #8f004e; }
+button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
+
+/* ====== Écrans titre / fin ====== */
+.ecran {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; padding: 24px 16px; text-align: center;
+  background: rgba(20, 22, 50, 0.72); backdrop-filter: blur(3px);
+}
+.ecran h1 { margin: 0; font-size: clamp(2.4rem, 11vw, 4.5rem); letter-spacing: -1px; }
+.ecran h1 span { color: #ffcc00; }
+.accroche { font-size: 1.15rem; margin: 0; }
+.aide { max-width: 420px; opacity: 0.85; font-size: 0.95rem; line-height: 1.4; margin: 0; }
+#meilleur { color: #ffcc00; margin: 0; }
+
+/* ====== HUD ====== */
+#hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+#chrono {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+  font-size: 2.4rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+#chrono.urgent { color: #ff4d4d; }
+#effets {
+  position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 54px); left: 50%; transform: translateX(-50%);
+  font-size: 1.1rem; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.6); white-space: nowrap;
+}
+#boutons {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: auto;
+}
+#boutons button { width: 48px; height: 48px; padding: 0; font-size: 1.4rem; background: rgba(30,30,60,0.75); box-shadow: none; }
+#inclino {
+  position: absolute; left: 16px; bottom: max(16px, env(safe-area-inset-bottom));
+  width: 70px; height: 70px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.7); background: rgba(0,0,0,0.25);
+}
+#inclino-point {
+  position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px;
+  border-radius: 50%; background: #ffcc00;
+}
+#mode {
+  position: absolute; left: 96px; bottom: max(16px, env(safe-area-inset-bottom));
+  font-size: 0.8rem; opacity: 0.85; text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+}
+#flash {
+  position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+  font-size: 1.8rem; font-weight: 800; text-align: center; white-space: nowrap;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.6); opacity: 0;
+}
+#flash.visible { animation: flash 1.6s ease-out forwards; }
+@keyframes flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
+}
+
+/* ====== Joystick tactile ====== */
+#joystick {
+  position: fixed; z-index: 11; width: 120px; height: 120px; margin: -60px 0 0 -60px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+#joystick-bouton {
+  position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px;
+  border-radius: 50%; background: rgba(255,255,255,0.8);
+}
+
+/* ====== Réglages ====== */
+#reglages {
+  position: fixed; z-index: 30; right: 0; top: 0; bottom: 0; width: min(360px, 100%);
+  overflow-y: auto; touch-action: pan-y;
+  background: rgba(20, 22, 50, 0.95); padding: 16px; padding-top: max(16px, env(safe-area-inset-top));
+}
+/* Sur téléphone : panneau en bas de l'écran, pour voir le jeu pendant qu'on règle */
+@media (max-width: 600px) {
+  #reglages { top: auto; height: 36vh; width: 100%; padding-top: 16px; background: rgba(20, 22, 50, 0.88); border-radius: 16px 16px 0 0; }
+}
+#reglages h2 { margin: 0 0 12px; }
+.reglage { margin-bottom: 12px; }
+.reglage label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
+.reglage label b { color: #ffcc00; font-variant-numeric: tabular-nums; }
+.reglage input[type=range] { width: 100%; height: 28px; }
+.reglage.case label { justify-content: flex-start; gap: 10px; align-items: center; }
+.reglage.case input { width: 22px; height: 22px; }
+#debug { font-size: 0.75rem; background: rgba(0,0,0,0.35); padding: 8px; border-radius: 6px; white-space: pre-wrap; }
+.ligne-boutons { display: flex; gap: 10px; flex-wrap: wrap; }
+.ligne-boutons button { font-size: 1rem; padding: 10px 18px; }
+
+#erreur {
+  position: fixed; z-index: 100; left: 8px; right: 8px; bottom: 8px;
+  background: #b00020; color: #fff; padding: 10px; border-radius: 8px; font-size: 0.85rem;
+}
