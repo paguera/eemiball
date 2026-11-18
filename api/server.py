@@ -5,11 +5,27 @@ Aucune dépendance externe requise (utilise uniquement la bibliothèque standard
 """
 import json
 import os
+import re
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DB_PATH = os.environ.get("DB_PATH", "/data/scores.db")
 PORT = int(os.environ.get("PORT", "3000"))
+LIMITE_CLASSEMENT = 5
+TAILLE_MAX_REQUETE = 2048  # octets max acceptés en POST
+
+MULT_DIFFICULTE = {
+    "facile": 1.0,
+    "normal": 1.25,
+    "difficile": 1.6,
+}
+
+
+def calculer_score(temps, difficulte="normal", chutes=0):
+    mult = MULT_DIFFICULTE.get(difficulte, 1.25)
+    base = (12000.0 / (max(1.0, temps) + 6.0)) * mult
+    penalite = chutes * 40
+    return max(50, int(round(base - penalite)))
 
 
 def init_db():
@@ -31,7 +47,7 @@ def init_db():
         conn.commit()
 
 
-def lire_classement(limite=10):
+def lire_classement(limite=LIMITE_CLASSEMENT):
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         lignes = conn.execute(
@@ -46,14 +62,23 @@ def lire_classement(limite=10):
         return [dict(r) for r in lignes]
 
 
-def enregistrer_score(nom, score, temps, difficulte="normal", chutes=0):
-    nom_propre = (str(nom or "").strip() or "Anonyme")[:24]
-    score_int = max(0, int(round(float(score))))
-    temps_float = round(max(0.0, float(temps)), 2)
+def nettoyer_nom(nom):
+    texte = re.sub(r"[\x00-\x1f\x7f]+", "", str(nom or "")).strip()
+    return (texte or "Anonyme")[:20]
+
+
+def enregistrer_score(nom, temps, difficulte="normal", chutes=0):
+    nom_propre = nettoyer_nom(nom)
+    temps_float = round(float(temps), 2)
+    if temps_float < 4.0 or temps_float > 3600.0:
+        raise ValueError("Temps de parcours invalide")
+
     diff_propre = str(difficulte or "normal")
-    if diff_propre not in ("facile", "normal", "difficile"):
+    if diff_propre not in MULT_DIFFICULTE:
         diff_propre = "normal"
-    chutes_int = max(0, int(chutes or 0))
+
+    chutes_int = max(0, min(999, int(chutes or 0)))
+    score_int = calculer_score(temps_float, diff_propre, chutes_int)
 
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -73,6 +98,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Length", str(len(corps)))
         self.end_headers()
         self.wfile.write(corps)
@@ -81,8 +107,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/scores"):
             try:
                 self._envoyer_json(200, lire_classement())
-            except Exception as e:
-                self._envoyer_json(500, {"erreur": str(e)})
+            except Exception:
+                self._envoyer_json(500, {"erreur": "Erreur serveur"})
         else:
             self._envoyer_json(404, {"erreur": "Introuvable"})
 
@@ -90,18 +116,20 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/scores"):
             try:
                 longueur = int(self.headers.get("Content-Length", "0"))
+                if longueur <= 0 or longueur > TAILLE_MAX_REQUETE:
+                    self._envoyer_json(413, {"erreur": "Requête trop volumineuse"})
+                    return
                 brut = self.rfile.read(longueur).decode("utf-8")
                 data = json.loads(brut) if brut else {}
                 classement = enregistrer_score(
                     nom=data.get("nom"),
-                    score=data.get("score", 0),
                     temps=data.get("temps", 0),
                     difficulte=data.get("difficulte", "normal"),
                     chutes=data.get("chutes", 0),
                 )
                 self._envoyer_json(201, classement)
-            except Exception as e:
-                self._envoyer_json(400, {"erreur": str(e)})
+            except Exception:
+                self._envoyer_json(400, {"erreur": "Données invalides"})
         else:
             self._envoyer_json(404, {"erreur": "Introuvable"})
 

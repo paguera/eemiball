@@ -6,6 +6,7 @@
 
 const CLE_LOCALE = 'eemiball-classement';
 const CLE_NOM = 'eemiball-nom';
+const LIMITE_CLASSEMENT = 5;
 
 const MULT_DIFFICULTE = {
   facile: 1.0,
@@ -38,13 +39,13 @@ function lireLocal() {
 }
 
 function ecrireLocal(liste) {
-  try { localStorage.setItem(CLE_LOCALE, JSON.stringify(liste.slice(0, 10))); } catch { /* rien */ }
+  try { localStorage.setItem(CLE_LOCALE, JSON.stringify(liste.slice(0, LIMITE_CLASSEMENT))); } catch { /* rien */ }
 }
 
 function trierEtLimiter(liste) {
   return [...liste]
     .sort((a, b) => (b.score - a.score) || (a.temps - b.temps))
-    .slice(0, 10);
+    .slice(0, LIMITE_CLASSEMENT);
 }
 
 export async function chargerClassement() {
@@ -53,8 +54,9 @@ export async function chargerClassement() {
     if (res.ok) {
       const donnees = await res.json();
       if (Array.isArray(donnees)) {
-        ecrireLocal(donnees);
-        return donnees;
+        const top = donnees.slice(0, LIMITE_CLASSEMENT);
+        ecrireLocal(top);
+        return top;
       }
     }
   } catch { /* repli sur localStorage */ }
@@ -83,8 +85,9 @@ export async function envoyerScore(entree) {
     if (res.ok) {
       const donnees = await res.json();
       if (Array.isArray(donnees)) {
-        ecrireLocal(donnees);
-        return donnees;
+        const top = donnees.slice(0, LIMITE_CLASSEMENT);
+        ecrireLocal(top);
+        return top;
       }
     }
   } catch { /* repli sur localStorage */ }

@@ -146,9 +146,7 @@ button.secondaire { background: var(--nuit-claire); box-shadow: 0 4px 0 var(--nu
   display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .classement-liste {
-  max-height: 165px; overflow-y: auto; touch-action: pan-y;
   display: flex; flex-direction: column; gap: 5px; font-size: 0.9rem;
-  scrollbar-color: var(--bordure) transparent;
 }
 .classement-ligne {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;

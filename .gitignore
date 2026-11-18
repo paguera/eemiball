@@ -10,3 +10,5 @@ desktop.ini
 
 # Rapports d'audit impeccable (locaux)
 .impeccable/
+__pycache__/
+*.pyc
