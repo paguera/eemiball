@@ -29,6 +29,17 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
 .ecran h1 { margin: 0; font-size: clamp(2.4rem, 11vw, 4.5rem); letter-spacing: -1px; }
 .ecran h1 span { color: #ffcc00; }
 .accroche { font-size: 1.15rem; margin: 0; }
+.difficultes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.btn-diff {
+  padding: 10px 20px; font-size: 1rem;
+  background: #3a3f6b; box-shadow: 0 4px 0 #23264a;
+  opacity: 0.85;
+}
+.btn-diff.actif {
+  background: #ffcc00; color: #1b1f3b;
+  box-shadow: 0 4px 0 #b38f00; opacity: 1;
+}
+.btn-diff.actif:active { box-shadow: 0 2px 0 #b38f00; }
 .aide { max-width: 420px; opacity: 0.85; font-size: 0.95rem; line-height: 1.4; margin: 0; }
 #meilleur { color: #ffcc00; margin: 0; }
 

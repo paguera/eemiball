@@ -40,8 +40,18 @@ addEventListener('resize', redimensionner);
 redimensionner();
 
 // ---------------- Réglages, physique, niveau ----------------
-const { params, reinitialiser } = createTuning($('reglages-liste'), () => physique.appliquerReglages());
+const boutonsDiff = document.querySelectorAll('.btn-diff');
+function majBoutonsDifficulte() {
+  const actuelle = difficulteActuelle();
+  boutonsDiff.forEach((btn) => btn.classList.toggle('actif', btn.dataset.difficulte === actuelle));
+}
+
+const { params, reinitialiser, appliquerDifficulte, difficulteActuelle } = createTuning($('reglages-liste'), () => {
+  physique.appliquerReglages();
+  majBoutonsDifficulte();
+});
 const physique = createPhysics(params);
+majBoutonsDifficulte();
 const niveau = buildLevel(scene, physique.world, physique.solMat);
 const controles = new Controls(params);
 
@@ -158,6 +168,9 @@ async function lancer() {
   }, 1200);
 }
 
+boutonsDiff.forEach((btn) => {
+  btn.addEventListener('click', () => appliquerDifficulte(btn.dataset.difficulte));
+});
 $('btn-jouer').addEventListener('click', lancer);
 $('btn-rejouer').addEventListener('click', nouvellePartie);
 $('btn-calib').addEventListener('click', () => { controles.calibrer(); game.flash('Recalibré ✔'); });

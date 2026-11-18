@@ -20,6 +20,12 @@ export const REGLAGES = [
   { cle: 'inverserCote',       nom: 'Inverser gauche / droite',  type: 'case', defaut: false },
 ];
 
+export const DIFFICULTES = {
+  facile:    { frottement: 0.8,  inclinaisonJeu: 20, gravite: 20 },
+  normal:    { frottement: 0.4,  inclinaisonJeu: 24, gravite: 25 },
+  difficile: { frottement: 0.15, inclinaisonJeu: 32, gravite: 35 },
+};
+
 const CLE_STOCKAGE = 'eemiball-reglages';
 
 function lireStockage() {
@@ -71,15 +77,35 @@ export function createTuning(conteneur, onChange) {
     conteneur.append(div);
   }
 
-  function reinitialiser() {
+  function appliquerValeurs(valeurs) {
     for (const r of REGLAGES) {
-      params[r.cle] = r.defaut;
-      if (r.type === 'case') champs[r.cle].checked = r.defaut;
-      else { champs[r.cle].value = r.defaut; champs[r.cle + '_valeur'].textContent = r.defaut; }
+      if (!(r.cle in valeurs)) continue;
+      params[r.cle] = valeurs[r.cle];
+      if (r.type === 'case') champs[r.cle].checked = !!valeurs[r.cle];
+      else { champs[r.cle].value = valeurs[r.cle]; champs[r.cle + '_valeur'].textContent = valeurs[r.cle]; }
     }
     ecrireStockage(params);
     onChange();
   }
 
-  return { params, reinitialiser };
+  function reinitialiser() {
+    const defauts = {};
+    for (const r of REGLAGES) defauts[r.cle] = r.defaut;
+    appliquerValeurs(defauts);
+  }
+
+  function appliquerDifficulte(niveau) {
+    const preset = DIFFICULTES[niveau];
+    if (preset) appliquerValeurs(preset);
+  }
+
+  function difficulteActuelle() {
+    for (const [niveau, preset] of Object.entries(DIFFICULTES)) {
+      const correspond = Object.entries(preset).every(([cle, val]) => Math.abs(params[cle] - val) < 1e-6);
+      if (correspond) return niveau;
+    }
+    return null;
+  }
+
+  return { params, reinitialiser, appliquerDifficulte, difficulteActuelle };
 }
