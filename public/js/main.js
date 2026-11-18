@@ -9,6 +9,7 @@ import { createPhysics, RAYON_BOULE } from './physics.js';
 import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
+import { createBoule } from './boule.js';
 import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauvegarderNom } from './scores.js';
 
 const $ = (id) => document.getElementById(id);
@@ -58,26 +59,9 @@ majBoutonsDifficulte();
 const niveau = buildLevel(scene, physique.world, physique.solMat);
 const controles = new Controls(params);
 
-// Boule : texture à rayures pour bien voir qu'elle roule
-function creerBoule() {
-  const c = document.createElement('canvas');
-  c.width = 256; c.height = 128;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#ff7a1a'; ctx.fillRect(0, 0, 256, 128);
-  ctx.fillStyle = '#ffffff';
-  for (let i = 0; i < 4; i++) ctx.fillRect(i * 64, 0, 22, 128);
-  ctx.fillRect(0, 56, 256, 16);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const m = new THREE.Mesh(
-    new THREE.SphereGeometry(RAYON_BOULE, 32, 24),
-    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35 }),
-  );
-  m.castShadow = true;
-  return m;
-}
-const boule = creerBoule();
-scene.add(boule);
+// Boule de verre transparente avec Thibault dedans (voir boule.js)
+const bouleVisuelle = createBoule(scene);
+const boule = bouleVisuelle.objet;
 
 // ---------------- État du jeu ----------------
 const game = {
@@ -319,7 +303,6 @@ function image(maintenant) {
     physique.limiterVitesse(game.boost);
 
     boule.position.copy(physique.boule.position);
-    boule.quaternion.copy(physique.boule.quaternion);
 
     bonus.update(dt, horloge, boule.position);
 
@@ -343,6 +326,8 @@ function image(maintenant) {
       camera.lookAt(10, 0, -32);
     }
   }
+
+  bouleVisuelle.update(dt, horloge, physique.boule, camera, cap, game.etat === 'jeu' && game.boost);
 
   // L'ombre suit la boule
   soleil.position.set(boule.position.x + 10, boule.position.y + 22, boule.position.z + 8);
