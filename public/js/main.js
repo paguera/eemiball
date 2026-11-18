@@ -103,7 +103,7 @@ function nouvellePartie() {
   game.chutes = 0;
   bonus.reset();
   replacerBoule();
-  geant.update(0, horloge, boule.position, cap, true);
+  geant.update(0, horloge, boule.position, cap, camera, true);
   controles.calibrer();
   game.etat = 'jeu';
   $('ecran-titre').classList.add('cache');
@@ -260,11 +260,11 @@ function image(maintenant) {
       finDePartie(false);
     }
     placerCamera(dt);
-    geant.update(dt, horloge, boule.position, cap);
+    geant.update(dt, horloge, boule.position, cap, camera);
     majHUD();
   } else {
     bonus.update(dt, horloge, null);
-    geant.update(dt, horloge, null, cap);
+    geant.update(dt, horloge, null, cap, camera);
     if (game.etat === 'titre') {
       // Écran titre : la caméra tourne autour du départ
       const a = horloge * 0.15;
