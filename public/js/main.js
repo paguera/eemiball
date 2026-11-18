@@ -250,6 +250,7 @@ function image(maintenant) {
   const dt = Math.max(0, Math.min((maintenant - dernier) / 1000, 0.05));
   dernier = Math.max(dernier, maintenant);
   horloge += dt;
+  niveau.animer(horloge, dt);
 
   controles.update(dt);
 
@@ -300,4 +301,4 @@ physique.replacer(niveau.depart);
 boule.position.copy(physique.boule.position);
 requestAnimationFrame(image);
 window.__jeuPret = true;
-window.__debug = { physique, game, controles, params, image, geant }; // pour inspecter depuis la console
+window.__debug = { physique, game, controles, params, image, geant, camera, scene }; // pour inspecter depuis la console

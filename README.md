@@ -5,7 +5,7 @@ Prototype « bac à sable » pour tester le gyroscope et le concept.
 
 - **Rendu** : Three.js (3D), **physique** : cannon-es, chargés depuis un CDN, sans installation
 - **Contrôles** : gyroscope (téléphone), flèches ou ZQSD (ordinateur), joystick tactile si le gyroscope est refusé
-- **Règles** : 60 s, chute dans le vide = retour au départ, ☕ café = vitesse x1,6 pendant 4 s, 🥐 croissant = +10 s
+- **Règles** : 60 s, chute dans le vide = retour au départ, ☕ café = vitesse x1,6 pendant 4 s, ⚡ canette énergisante = +10 s
 - **⟳** recalibre (la position actuelle du téléphone devient « à plat »), **⚙** ouvre les réglages en direct
 - Touche **R** sur ordinateur : retour au départ
 

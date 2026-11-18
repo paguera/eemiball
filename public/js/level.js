@@ -7,16 +7,22 @@
 // =====================================================================
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { creerLyon } from './decor-lyon.js';
+import { creerUniversCode } from './decor-code.js';
 
 const HAUT = new THREE.Vector3(0, 1, 0);
 
-// Texture quadrillée partagée : le quadrillage aide à percevoir la vitesse
+// Texture des plateformes : quadrillage (aide à percevoir la vitesse) + lignes de code
 function textureGrille() {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, 128, 128);
+  // Lignes de « code » discrètes (indentation + longueurs variées, façon minimap d'éditeur)
+  const lignes = [[8, 70], [8, 46], [22, 60], [22, 38], [36, 52], [22, 30], [8, 20], [8, 84]];
+  ctx.fillStyle = 'rgba(0,0,0,0.10)';
+  lignes.forEach(([x, l], i) => ctx.fillRect(x + 6, 14 + i * 13, l, 6));
   ctx.strokeStyle = 'rgba(0,0,0,0.18)';
   ctx.lineWidth = 6;
   ctx.strokeRect(0, 0, 128, 128);
@@ -44,11 +50,6 @@ function textureTexte(lignes, fond, couleur, l = 512, h = 256) {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;
-}
-
-// Générateur pseudo-aléatoire stable (le décor est identique à chaque chargement)
-function aleatoire(graine) {
-  return () => { graine = (graine * 16807) % 2147483647; return (graine - 1) / 2147483646; };
 }
 
 export function buildLevel(scene, world, solMat) {
@@ -197,50 +198,26 @@ export function buildLevel(scene, world, solMat) {
   corpsBat.position.set(46, 5, -59);
   world.addBody(corpsBat);
 
-  // ---------------- DÉCOR : immeubles de Lyon tout en bas ----------------
-  const rnd = aleatoire(42);
-  const teintes = [0xe8b07a, 0xd9875f, 0xf2d0a4, 0xc97b63, 0xe5c39b, 0xf0a98a];
-  const sol = new THREE.Mesh(
-    new THREE.PlaneGeometry(400, 400),
-    new THREE.MeshStandardMaterial({ color: 0x7aa36b }),
-  );
-  sol.rotation.x = -Math.PI / 2;
-  sol.position.set(20, -60, -30);
-  scene.add(sol);
-  const fleuve = new THREE.Mesh(
-    new THREE.PlaneGeometry(14, 400),
-    new THREE.MeshStandardMaterial({ color: 0x3f7fbf, roughness: 0.2 }),
-  );
-  fleuve.rotation.x = -Math.PI / 2;
-  fleuve.rotation.z = 0.3;
-  fleuve.position.set(-25, -59.9, -30);
-  scene.add(fleuve);
-  for (let i = 0; i < 80; i++) {
-    const angle = rnd() * Math.PI * 2;
-    const dist = 25 + rnd() * 70;
-    const l = 5 + rnd() * 8, p = 5 + rnd() * 8, h = 15 + rnd() * 25;
-    const b = new THREE.Mesh(
-      new THREE.BoxGeometry(l, h, p),
-      new THREE.MeshStandardMaterial({ color: teintes[Math.floor(rnd() * teintes.length)] }),
-    );
-    b.position.set(20 + Math.cos(angle) * dist, -60 + h / 2, -30 + Math.sin(angle) * dist);
-    scene.add(b);
-  }
+  // ---------------- DÉCOR : Lyon en contrebas + univers dev/coding ----------------
+  creerLyon(scene);
+  const universCode = creerUniversCode(scene);
 
   return {
     depart: { x: 0, y: 1.2, z: 3 },
     capDepart: 0,          // la caméra regarde vers -Z
+    /** Animation du décor (code qui flotte, particules), appelée à chaque image. */
+    animer(t, dt) { universCode.animer(t, dt); },
     yChute: -8,            // en dessous : on a chuté
     /** Vrai quand la boule passe sous le portail. */
     estArrive(p) {
       return p.x > portailX - 0.5 && p.x < portailX + 1.5 && p.z > -62 && p.z < -56 && p.y > 0;
     },
     bonus: [
-      { type: 'croissant', pos: [-1.5, 0.8, -11] },
+      { type: 'canette', pos: [-1.5, 0.8, -11] },
       { type: 'cafe',      pos: [0, 3.8, -32.5] },
-      { type: 'croissant', pos: [0, 3.8, -40.5] },
+      { type: 'canette', pos: [0, 3.8, -40.5] },
       { type: 'cafe',      pos: [11, 2.8, -59] },
-      { type: 'croissant', pos: [32, 1.3, -61] },
+      { type: 'canette', pos: [32, 1.3, -61] },
     ],
   };
 }
