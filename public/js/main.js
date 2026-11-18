@@ -10,6 +10,7 @@ import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
 import { createBoule } from './boule.js';
+import { createAudio } from './audio.js';
 import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauvegarderNom } from './scores.js';
 
 const $ = (id) => document.getElementById(id);
@@ -64,11 +65,13 @@ const bouleVisuelle = createBoule(scene);
 const boule = bouleVisuelle.objet;
 
 // ---------------- État du jeu ----------------
+const audio = createAudio();
 const game = {
   etat: 'titre',            // 'titre' | 'jeu' | 'fin'
   temps: 0,                 // temps écoulé depuis le départ
   boostJusqua: 0,
   chutes: 0,
+  audio,
   get boost() { return this.temps < this.boostJusqua; },
   flash(message) {
     const el = $('flash');
@@ -80,6 +83,12 @@ const game = {
 };
 const bonus = createBonuses(scene, niveau.bonus, game);
 const geant = createGeant(scene);
+
+physique.boule.addEventListener('collide', (e) => {
+  if (game.etat === 'jeu') {
+    audio.impact(e.contact.getImpactVelocityAlongNormal());
+  }
+});
 
 let cap = niveau.capDepart; // direction de la caméra (radians)
 const posCamera = new THREE.Vector3();
@@ -154,10 +163,13 @@ function nouvellePartie() {
   $('ecran-titre').classList.add('cache');
   $('ecran-fin').classList.add('cache');
   $('hud').classList.remove('cache');
+  audio.jouer('depart');
   game.flash('Partez !');
 }
 
 function retourAccueil() {
+  if (game.etat === 'jeu') audio.jouer('defaite', 0.6);
+  audio.arreterTout();
   game.etat = 'titre';
   replacerBoule();
   $('hud').classList.add('cache');
@@ -170,6 +182,8 @@ function retourAccueil() {
 
 async function finDePartie() {
   game.etat = 'fin';
+  audio.arreterTout();
+  audio.jouer('victoire');
   $('hud').classList.add('cache');
   $('ecran-fin').classList.remove('cache');
   const diff = difficulteActuelle() || 'normal';
@@ -190,6 +204,7 @@ async function finDePartie() {
 
 // ---------------- Boutons ----------------
 async function lancer() {
+  audio.debloquer();
   // 1) Autorisation du gyroscope : doit être la PREMIÈRE chose faite dans le clic (iPhone)
   const ok = await controles.activerGyro();
   // 2) Plein écran (Android ; ignoré sur iPhone)
@@ -219,6 +234,10 @@ $('btn-jouer').addEventListener('click', lancer);
 $('btn-rejouer').addEventListener('click', nouvellePartie);
 $('btn-quitter').addEventListener('click', retourAccueil);
 $('btn-accueil').addEventListener('click', retourAccueil);
+$('btn-son').addEventListener('click', () => {
+  const muet = audio.basculerMuet();
+  $('btn-son').textContent = muet ? '🔇' : '🔊';
+});
 $('btn-calib').addEventListener('click', () => { controles.calibrer(); game.flash('Recalibré ✔'); });
 $('btn-reglages').addEventListener('click', () => $('reglages').classList.toggle('cache'));
 $('btn-fermer').addEventListener('click', () => $('reglages').classList.add('cache'));
@@ -308,6 +327,7 @@ function image(maintenant) {
 
     if (boule.position.y < niveau.yChute) {
       game.chutes++;
+      audio.jouer('chute');
       replacerBoule();
       game.flash('Plouf ! Retour au départ');
     } else if (niveau.estArrive(boule.position)) {
@@ -327,6 +347,7 @@ function image(maintenant) {
     }
   }
 
+  audio.updateRoulement(dt, physique.boule, game.etat === 'jeu', boule.position.y < -1);
   bouleVisuelle.update(dt, horloge, physique.boule, camera, cap, game.etat === 'jeu' && game.boost);
 
   // L'ombre suit la boule

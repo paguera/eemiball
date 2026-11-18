@@ -33,6 +33,7 @@ export const TYPES_BONUS = {
     },
     appliquer(game) {
       game.boostJusqua = game.temps + this.duree;
+      game.audio?.jouer('cafe');
       game.flash('☕ Café ! Vitesse x1.6');
     },
   },
@@ -78,6 +79,7 @@ export const TYPES_BONUS = {
     },
     appliquer(game) {
       game.boostJusqua = Math.max(game.temps, game.boostJusqua) + 5;
+      game.audio?.jouer('redbull');
       game.flash('⚡ Canette : Boost x1.6 !');
     },
   },
