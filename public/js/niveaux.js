@@ -6,6 +6,8 @@
 //   - dalle(x, y, z, largeur, profondeur, couleur) : dalle carrée posée à plat
 //   - mur(centre, taille, couleur) : rebord / obstacle
 //   - bosse(x, ySol, z) : bosse à moitié enterrée
+//   - virage({ centre, rayon, de, a, yDe, yA, largeur, couleur, rail }) : route en arc de cercle
+//   - mobile({ taille, couleur, position(t), angle(t) }) : obstacle qui bouge
 //  Coordonnées : -Z = devant au départ, +X = droite, Y = hauteur.
 //  arrivee : position du portail (au sol) et direction dans laquelle on le traverse
 //  (même convention que la caméra : 0 = vers -Z, π/2 = vers -X, -π/2 = vers +X).
@@ -107,7 +109,61 @@ export const NIVEAUX = [
     ],
   },
 
-  // Niveau 3 : à venir (copier un bloc et changer le parcours)
+  // ------------------------------------------------------------------
+  {
+    numero: 3,
+    nom: 'Agence marketing',
+    univers: 'marketing',     // décor : pubs, entonnoir de conversion, graphiques, j'aime…
+    texture: 'trame',         // plateformes avec une trame d'impression (comme une affiche)
+    description: 'Le plus long et le plus dur : entonnoir, virages, pop-ups qui bougent, bras tournant et lacets.',
+    depart: { x: 0, y: 1.2, z: 3 },
+    capDepart: 0,
+    vue: [24, 1, -50],
+    construire({ slab, mur, bosse, virage, mobile }) {
+      const violet = 0x7b2cbf, orange = 0xff6b35, turquoise = 0x2ec4b6, rouge = 0xe63946, jaune = 0xffbe0b, blanc = 0xf4f4f4;
+      slab([0, 0, 6], [0, 0, -5], 8, blanc);               // départ
+      mur([0, 0.4, 6.25], [8, 0.8, 0.5], violet);
+      // 1. Entonnoir de conversion : la route se resserre (6 m → 4 m → 2,4 m), avec deux bosses
+      slab([0, 0, -5], [0, 0, -13], 6, violet);
+      bosse(1.6, 0, -8.5, 1, 0.3);
+      bosse(-1.6, 0, -11, 1, 0.3);
+      slab([0, 0, -13], [0, 0, -19], 4, orange);
+      slab([0, 0, -19], [0, 0, -25], 2.4, rouge);
+      // 2. Virage serré à droite (rayon 6 m)
+      virage({ centre: [6, -25], rayon: 6, de: Math.PI, a: 1.5 * Math.PI, yDe: 0, largeur: 3, couleur: turquoise });
+      // 3. Ligne droite et deux pop-ups de pub qui coulissent en travers de la route
+      slab([6, 0, -31], [20, 0, -31], 4, blanc);
+      mobile({ taille: [0.5, 1.2, 1.7], couleur: rouge, position: (t) => [12.5, 0.6, -31 + Math.sin(t * 1.6) * 1.2] });
+      mobile({ taille: [0.5, 1.2, 1.7], couleur: orange, position: (t) => [16.5, 0.6, -31 - Math.sin(t * 1.6) * 1.2] });
+      // 4. Virage à gauche qui monte en spirale (+2 m), avec un rebord extérieur
+      virage({ centre: [20, -37], rayon: 6, de: Math.PI / 2, a: 0, yDe: 0, yA: 2, largeur: 3, couleur: violet, rail: 'exterieur' });
+      // 5. Plateau avec un bras qui tourne : il faut passer au bon moment
+      slab([26, 2, -37], [26, 2, -40], 3, orange);
+      slab([26, 2, -40], [26, 2, -50], 10, blanc);
+      mur([26, 2.5, -45], [1, 1, 1], violet); // axe du bras
+      mobile({ taille: [8.6, 0.7, 0.5], couleur: rouge, position: () => [26, 2.4, -45], angle: (t) => t * 0.9 });
+      // 6. Lacets qui descendent : virage à droite puis à gauche, étroits (2,6 m)
+      virage({ centre: [31, -50], rayon: 5, de: Math.PI, a: 1.5 * Math.PI, yDe: 2, yA: 1.25, largeur: 2.6, couleur: turquoise });
+      virage({ centre: [31, -60], rayon: 5, de: Math.PI / 2, a: 0, yDe: 1.25, yA: 0.5, largeur: 2.6, couleur: orange });
+      // 7. Ligne droite avec deux pop-ups qui balaient la largeur de la route
+      slab([36, 0.5, -60], [36, 0.5, -76], 5, blanc);
+      mobile({ taille: [1.8, 1.2, 0.5], couleur: violet, position: (t) => [36 + Math.sin(t * 1.9) * 1.6, 1.1, -65] });
+      mobile({ taille: [1.8, 1.2, 0.5], couleur: turquoise, position: (t) => [36 - Math.sin(t * 1.9) * 1.6, 1.1, -71] });
+      // 8. Tremplin et trou de 2,5 m
+      slab([36, 0.5, -76], [36, 1.1, -78.5], 2.5, jaune);
+      slab([36, -0.5, -81], [36, -0.5, -93], 8, blanc);    // réception
+      // 9. Dernier virage à gauche (rebord extérieur), puis le parvis de l'EEMI
+      virage({ centre: [29, -93], rayon: 7, de: 0, a: -Math.PI / 2, yDe: -0.5, largeur: 4, couleur: violet, rail: 'exterieur' });
+      slab([29, -0.5, -100], [5, -0.5, -100], 12, blanc);
+    },
+    arrivee: { x: 20, y: -0.5, z: -100, angle: Math.PI / 2 },
+    bonus: [
+      { type: 'canette', pos: [0, 0.8, -9.5] },
+      { type: 'canette', pos: [26, 2.8, -38.5] },
+      { type: 'canette', pos: [36, 1.3, -62] },
+      { type: 'canette', pos: [36, 0.3, -87] },
+    ],
+  },
 ];
 
 export function trouverNiveau(numero) {

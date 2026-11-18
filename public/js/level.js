@@ -11,6 +11,7 @@ import * as CANNON from 'cannon-es';
 import { creerLyon } from './decor-lyon.js';
 import { creerUniversCode } from './decor-code.js';
 import { creerUniversGraphisme } from './decor-graphisme.js';
+import { creerUniversMarketing } from './decor-marketing.js';
 import { trouverNiveau } from './niveaux.js';
 
 const HAUT = new THREE.Vector3(0, 1, 0);
@@ -59,6 +60,28 @@ function textureMillimetre() {
   return t;
 }
 
+// Texture « trame d'impression » (niveau 3, univers marketing) : points comme sur une affiche
+function textureTrame() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.13)';
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+    const r = 1.5 + ((x + y) % 4) * 0.9; // points de tailles variées, effet trame
+    ctx.beginPath(); ctx.arc(x * 16 + 8 + (y % 2) * 8, y * 16 + 8, r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.16)';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
 // Texte sur une texture (pour l'enseigne EEMI, les panneaux…)
 function textureTexte(lignes, fond, couleur, l = 512, h = 256) {
   const c = document.createElement('canvas');
@@ -79,12 +102,13 @@ function textureTexte(lignes, fond, couleur, l = 512, h = 256) {
 }
 
 export function buildLevel(scene, world, solMat) {
-  const textures = { code: textureGrille(), millimetre: textureMillimetre() };
+  const textures = { code: textureGrille(), millimetre: textureMillimetre(), trame: textureTrame() };
   let grille = textures.code; // texture des plateformes du niveau en cours
 
   // Ce qui appartient au parcours en cours (démonté à chaque changement de niveau)
   let groupe = null;
   let corpsParcours = [];
+  let obstacles = []; // obstacles qui bougent (animés à chaque image)
   const ajouterCorps = (b) => { world.addBody(b); corpsParcours.push(b); };
 
   /**
@@ -165,6 +189,69 @@ export function buildLevel(scene, world, solMat) {
     ajouterCorps(corps);
   }
 
+  /**
+   * Virage : une route en arc de cercle, faite de courts tronçons qui se chevauchent.
+   * centre : [x, z] du cercle ; de / a : angles de départ et d'arrivée (radians,
+   * point = centre + rayon × (cos, sin)) ; la hauteur passe de yDe à yA (virage qui monte).
+   * rail : 'exterieur' ou 'interieur' ajoute un rebord du côté choisi.
+   */
+  function virage({ centre, rayon, de, a, yDe, yA = yDe, largeur, couleur, rail = null, couleurRail = 0xffffff }) {
+    const [cx, cz] = centre;
+    const n = Math.max(4, Math.ceil(Math.abs(a - de) / (Math.PI / 24))); // un tronçon tous les 7,5°
+    const point = (k, r = rayon) => {
+      const ang = de + (a - de) * (k / n);
+      return [cx + r * Math.cos(ang), yDe + (yA - yDe) * (k / n), cz + r * Math.sin(ang)];
+    };
+    for (let k = 0; k < n; k++) {
+      const p0 = new THREE.Vector3(...point(k)), p1 = new THREE.Vector3(...point(k + 1));
+      // On allonge chaque tronçon de 15 cm de chaque côté pour boucher les angles extérieurs.
+      // Un tronçon sur deux est 1 cm plus haut : pas de scintillement là où ils se chevauchent.
+      const dir = p1.clone().sub(p0).normalize();
+      const decal = k % 2 ? 0.01 : 0;
+      const debut = p0.clone().addScaledVector(dir, -0.15); debut.y += decal;
+      const fin = p1.clone().addScaledVector(dir, 0.15); fin.y += decal;
+      slab(debut.toArray(), fin.toArray(), largeur, couleur);
+      if (rail) {
+        const r = rail === 'exterieur' ? rayon + largeur / 2 - 0.25 : rayon - largeur / 2 + 0.25;
+        const q0 = point(k, r), q1 = point(k + 1, r);
+        const centreRail = new THREE.Vector3((q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2 + 0.35, (q0[2] + q1[2]) / 2);
+        const longueur = Math.hypot(q1[0] - q0[0], q1[2] - q0[2]) + 0.3;
+        const qRail = new THREE.Quaternion().setFromAxisAngle(HAUT, Math.atan2(q1[0] - q0[0], q1[2] - q0[2]));
+        addBox(centreRail, [0.5, 0.7, longueur], qRail, couleurRail);
+      }
+    }
+  }
+
+  /**
+   * Obstacle mobile (bloc « pop-up de pub », bras qui tourne…).
+   * position(t) renvoie [x, y, z] ; angle(t) (optionnel) la rotation autour de l'axe vertical.
+   * C'est un corps « cinématique » : il pousse la boule sans être poussé.
+   */
+  function mobile({ taille, couleur, position, angle = () => 0, materiau = null }) {
+    const mat = materiau || new THREE.MeshStandardMaterial({ color: couleur, roughness: 0.5 });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...taille), mat);
+    mesh.castShadow = mesh.receiveShadow = true;
+    groupe.add(mesh);
+    const corps = new CANNON.Body({
+      mass: 0, type: CANNON.Body.KINEMATIC, material: solMat,
+      shape: new CANNON.Box(new CANNON.Vec3(taille[0] / 2, taille[1] / 2, taille[2] / 2)),
+    });
+    ajouterCorps(corps);
+    const placer = (t) => {
+      const p = position(t), p2 = position(t + 0.02);
+      corps.position.set(...p);
+      corps.velocity.set((p2[0] - p[0]) / 0.02, (p2[1] - p[1]) / 0.02, (p2[2] - p[2]) / 0.02);
+      const a = angle(t);
+      corps.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), a);
+      corps.angularVelocity.set(0, (angle(t + 0.02) - a) / 0.02, 0);
+      mesh.position.set(...p);
+      mesh.rotation.y = a;
+    };
+    placer(0);
+    obstacles.push(placer);
+    return mesh;
+  }
+
   // ---------------- ARRIVÉE : portail + bâtiment EEMI (matériaux partagés entre niveaux) ----------------
   const matPoteau = new THREE.MeshStandardMaterial({ color: 0xe6007e });
   const matBanniere = new THREE.MeshBasicMaterial({ map: textureTexte([{ texte: 'ARRIVÉE', taille: 120 }], '#e6007e', '#ffffff', 1024, 160) });
@@ -223,6 +310,7 @@ export function buildLevel(scene, world, solMat) {
   const univers = {
     code: creerUniversCode(scene),
     graphisme: creerUniversGraphisme(scene),
+    marketing: creerUniversMarketing(scene),
   };
   let universActuel = univers.code;
 
@@ -235,6 +323,7 @@ export function buildLevel(scene, world, solMat) {
     scene.remove(groupe);
     for (const b of corpsParcours) world.removeBody(b);
     corpsParcours = [];
+    obstacles = [];
     groupe = null;
   }
 
@@ -247,7 +336,7 @@ export function buildLevel(scene, world, solMat) {
     for (const u of Object.values(univers)) u.groupe.visible = u === universActuel;
     groupe = new THREE.Group();
     scene.add(groupe);
-    niveauActuel.construire({ slab, dalle, mur, bosse });
+    niveauActuel.construire({ slab, dalle, mur, bosse, virage, mobile });
     construireArrivee(niveauActuel.arrivee);
   }
 
@@ -263,7 +352,10 @@ export function buildLevel(scene, world, solMat) {
     get bonus() { return niveauActuel.bonus; },
     yChute: -8,            // en dessous : on a chuté
     /** Animation du décor (code qui flotte, particules), appelée à chaque image. */
-    animer(t, dt) { universActuel.animer(t, dt); },
+    animer(t, dt) {
+      universActuel.animer(t, dt);
+      for (const placer of obstacles) placer(t); // obstacles mobiles du niveau
+    },
     /** Vrai quand la boule passe sous le portail (calcul dans le repère de l'arrivée). */
     estArrive(p) {
       const { x, y, z, angle } = niveauActuel.arrivee;
