@@ -10,10 +10,13 @@ import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
 import { createBoule } from './boule.js';
+import { createMenuPersonnages } from './personnages.js';
 import { createAudio } from './audio.js';
 import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauvegarderNom } from './scores.js';
 
 const $ = (id) => document.getElementById(id);
+// Réglage « réduire les animations » du téléphone / de l'ordinateur
+const mouvementReduit = matchMedia('(prefers-reduced-motion: reduce)');
 
 // ---------------- Rendu ----------------
 const renderer = new THREE.WebGLRenderer({ canvas: $('jeu'), antialias: true });
@@ -63,6 +66,14 @@ const controles = new Controls(params);
 // Boule de verre transparente avec Thibault dedans (voir boule.js)
 const bouleVisuelle = createBoule(scene);
 const boule = bouleVisuelle.objet;
+
+// Menu de choix du personnage : le choix change tout de suite l'image dans la boule
+const menuPerso = createMenuPersonnages({
+  ecranTitre: $('ecran-titre'), ecranPerso: $('ecran-perso'), grille: $('grille-perso'),
+  bouton: $('btn-perso'), miniature: $('perso-miniature'), nomAffiche: $('perso-nom'), valider: $('btn-perso-ok'),
+  onChoix: (p) => bouleVisuelle.changerPerso(p.image),
+});
+bouleVisuelle.changerPerso(menuPerso.actuel.image);
 
 // ---------------- État du jeu ----------------
 const audio = createAudio();
@@ -174,7 +185,7 @@ function retourAccueil() {
   replacerBoule();
   $('hud').classList.add('cache');
   $('ecran-fin').classList.add('cache');
-  $('reglages').classList.add('cache');
+  afficherReglages(false);
   $('joystick').classList.add('cache');
   $('ecran-titre').classList.remove('cache');
   rafraichirClassement();
@@ -236,14 +247,28 @@ $('btn-quitter').addEventListener('click', retourAccueil);
 $('btn-accueil').addEventListener('click', retourAccueil);
 $('btn-son').addEventListener('click', () => {
   const muet = audio.basculerMuet();
-  $('btn-son').textContent = muet ? '🔇' : '🔊';
+  $('btn-son').setAttribute('aria-pressed', String(muet)); // le CSS affiche l'icône correspondante
+  $('btn-son').setAttribute('aria-label', muet ? 'Activer le son' : 'Couper le son');
 });
 $('btn-calib').addEventListener('click', () => { controles.calibrer(); game.flash('Recalibré ✔'); });
-$('btn-reglages').addEventListener('click', () => $('reglages').classList.toggle('cache'));
-$('btn-fermer').addEventListener('click', () => $('reglages').classList.add('cache'));
+// Panneau de réglages : on garde aria-expanded à jour pour les lecteurs d'écran
+function afficherReglages(ouvert) {
+  $('reglages').classList.toggle('cache', !ouvert);
+  $('btn-reglages').setAttribute('aria-expanded', String(ouvert));
+  if (ouvert) {
+    $('reglages-titre').setAttribute('tabindex', '-1');
+    $('reglages-titre').focus();
+  }
+}
+$('btn-reglages').addEventListener('click', () => afficherReglages($('reglages').classList.contains('cache')));
+$('btn-fermer').addEventListener('click', () => { afficherReglages(false); $('btn-reglages').focus(); });
 $('btn-defaut').addEventListener('click', reinitialiser);
 addEventListener('keydown', (e) => {
   const dansChamp = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+  if (menuPerso.ouvert) {
+    if (e.key === 'Enter' || e.key === 'Escape') menuPerso.fermer();
+    return;
+  }
   if (e.key === 'Enter' || (e.key === ' ' && !dansChamp)) {
     if (game.etat === 'titre') lancer();
     else if (game.etat === 'fin') nouvellePartie();
@@ -275,7 +300,7 @@ function placerCamera(dt, immediat = false) {
   camera.lookAt(cibleCamera);
 
   // Effet « le plateau penche » : on incline légèrement la caméra
-  const visuel = (params.inclinaisonJeu * Math.PI / 180) * params.inclinaisonVisuelle;
+  const visuel = mouvementReduit.matches ? 0 : (params.inclinaisonJeu * Math.PI / 180) * params.inclinaisonVisuelle;
   camera.rotateZ(controles.tilt.x * visuel);
   camera.rotateX(controles.tilt.y * visuel * 0.5);
 }
@@ -361,4 +386,7 @@ physique.replacer(niveau.depart);
 boule.position.copy(physique.boule.position);
 requestAnimationFrame(image);
 window.__jeuPret = true;
-window.__debug = { physique, game, controles, params, image, geant, camera, scene }; // pour inspecter depuis la console
+// Outils de test : seulement en local (localhost), jamais sur le site en ligne
+if (['localhost', '127.0.0.1'].includes(location.hostname)) {
+  window.__debug = { physique, game, controles, params, image, geant, camera, scene };
+}

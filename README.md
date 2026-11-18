@@ -1,12 +1,12 @@
-# EEMI Ball : prototype
+# Super EEMI Roll (EEMI Ball) : prototype
 
-Fais rouler la boule jusqu'à l'EEMI (Lyon) avant la fin du chrono, en penchant ton téléphone.
+Fais rouler la boule jusqu'à l'EEMI (Lyon) le plus vite possible, en penchant ton téléphone.
 Prototype « bac à sable » pour tester le gyroscope et le concept.
 
-- **Rendu** : Three.js (3D), **physique** : cannon-es, chargés depuis un CDN, sans installation
+- **Rendu** : Three.js (3D), **physique** : cannon-es, servis par le projet (dossier `public/vendor/`), sans installation
 - **Contrôles** : gyroscope (téléphone), flèches ou ZQSD (ordinateur), joystick tactile si le gyroscope est refusé
-- **Règles** : 60 s, chute dans le vide = retour au départ, ⚡ canette énergisante = vitesse x1,6 pendant 5 s
-- **⟳** recalibre (la position actuelle du téléphone devient « à plat »), **⚙** ouvre les réglages en direct
+- **Règles** : le chrono mesure ton temps (classement par difficulté), chute dans le vide = retour au départ, ⚡ canette énergisante = vitesse x1,6 pendant 5 s
+- Bouton **flèche circulaire** : recalibre (la position actuelle du téléphone devient « à plat ») ; bouton **curseurs** : réglages en direct
 - Touche **R** sur ordinateur : retour au départ
 
 ## 1. Tester sur l'ordinateur
@@ -62,6 +62,10 @@ Pour mettre à jour le jeu : recopie le dossier `public/` (pas besoin de redéma
 | Fichier | Rôle |
 |---|---|
 | `main.js` | Boucle de jeu, caméra, chrono, écrans |
+| `boule.js` | Boule de verre et animation du personnage dedans |
+| `personnages.js` | Liste des personnages et menu de choix |
+| `geant.js` | Le géant BOSS TV qui suit le joueur dans la ville |
+| `decor-lyon.js` / `decor-code.js` | Décor de Lyon (Fourvière…) et univers dev/coding |
 | `controls.js` | Gyroscope + calibration, clavier, joystick |
 | `physics.js` | Physique : on penche la **gravité** au lieu du niveau |
 | `level.js` | Le parcours (`slab()` = plateforme entre deux points), bâtiment EEMI, décor |

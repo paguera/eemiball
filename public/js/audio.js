@@ -7,7 +7,6 @@ const FICHIERS = {
   victoire: 'sons/victoire.mp3',
   defaite:  'sons/defaite.mp3',
   chute:    'sons/chute.mp3',
-  cafe:     'sons/cafe.mp3',
   redbull:  'sons/redbull.mp3',
   impact:   'sons/impact.mp3',
 };
