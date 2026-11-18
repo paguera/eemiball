@@ -212,3 +212,54 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
   position: fixed; z-index: 100; left: 8px; right: 8px; bottom: 8px;
   background: #b00020; color: #fff; padding: 10px; border-radius: 8px; font-size: 0.85rem;
 }
+
+/* ====== Choix du personnage ====== */
+.btn-perso {
+  display: flex; align-items: center; gap: 12px;
+  width: min(280px, 85vw); padding: 6px 14px 6px 6px;
+  font-size: 1rem; text-align: left;
+  background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px; box-shadow: none;
+}
+.btn-perso:active { transform: translateY(1px); box-shadow: none; }
+.btn-perso img {
+  width: 46px; height: 46px; object-fit: contain; border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #5f7fd6, #2b2a6b);
+}
+.btn-perso-texte { flex: 1; display: flex; flex-direction: column; font-size: 0.75rem; font-weight: 600; opacity: 0.85; }
+.btn-perso-texte b { font-size: 1.1rem; opacity: 1; color: #ffcc00; }
+.btn-perso-chevron { font-size: 1.3rem; opacity: 0.7; }
+
+#ecran-perso { justify-content: safe center; } /* reste lisible même si l'écran est petit */
+.titre-perso { font-size: clamp(2rem, 9vw, 3.2rem) !important; }
+.grille-perso {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  width: min(420px, 100%);
+}
+@media (max-width: 340px) { .grille-perso { grid-template-columns: repeat(2, 1fr); } }
+.carte-perso {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 6px 8px; font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.08); border: 3px solid transparent;
+  border-radius: 18px; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+.carte-perso:hover { transform: translateY(-3px); }
+.carte-photo {
+  width: 100%; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(207, 233, 255, 0.55), rgba(95, 127, 214, 0.25) 60%, transparent 72%);
+}
+.carte-photo img { width: 88%; height: 88%; object-fit: contain; transform-origin: 50% 100%; }
+.carte-nom { font-weight: 800; }
+.carte-perso.actif { border-color: #ffcc00; background: rgba(255, 204, 0, 0.16); }
+.carte-perso.actif .carte-nom { color: #ffcc00; }
+/* Le personnage choisi se dandine, comme dans la boule */
+.carte-perso.actif .carte-photo img { animation: dandine 0.9s ease-in-out infinite; }
+@keyframes dandine {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  25% { transform: rotate(0deg) translateY(-6%); }
+  50% { transform: rotate(6deg) translateY(0); }
+  75% { transform: rotate(0deg) translateY(-6%); }
+}
+@media (prefers-reduced-motion: reduce) { .carte-perso.actif .carte-photo img { animation: none; } }

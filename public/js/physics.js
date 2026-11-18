@@ -6,7 +6,7 @@
 import * as CANNON from 'cannon-es';
 
 export const RAYON_BOULE = 0.5;
-export const BOOST = 1.6; // multiplicateur du café
+export const BOOST = 1.6; // multiplicateur du boost (canette)
 
 export function createPhysics(params) {
   const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -params.gravite, 0) });

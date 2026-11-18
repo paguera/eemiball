@@ -9,7 +9,7 @@
   <title>EEMI Ball</title>
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="apple-touch-icon" href="assets/favicon.png">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 
   <!-- Bibliothèques embarquées localement dans public/vendor/ -->
   <script type="importmap">
@@ -74,6 +74,11 @@
     <div class="zone-joueur">
       <input id="champ-nom" type="text" maxlength="20" placeholder="Entre ton pseudo…" autocomplete="nickname">
     </div>
+    <button id="btn-perso" type="button" class="btn-perso" title="Choisir son personnage">
+      <img id="perso-miniature" alt="">
+      <span class="btn-perso-texte">Personnage<b id="perso-nom">Thibault</b></span>
+      <span class="btn-perso-chevron">▸</span>
+    </button>
     <div id="difficultes" class="difficultes" data-niveau="normal" role="group" aria-label="Niveau de difficulté">
       <button type="button" class="btn-diff" data-difficulte="facile">Facile</button>
       <button type="button" class="btn-diff actif" data-difficulte="normal">Normal</button>
@@ -89,6 +94,13 @@
       cette position devient « à plat ». Penche-le pour faire rouler la boule.<br>
       Sur ordinateur : flèches ou ZQSD.
     </p>
+  </div>
+
+  <!-- Choix du personnage -->
+  <div id="ecran-perso" class="ecran cache">
+    <h1 class="titre-perso">Choisis ton <span>perso</span></h1>
+    <div id="grille-perso" class="grille-perso" role="radiogroup" aria-label="Personnage"></div>
+    <button id="btn-perso-ok">Valider</button>
   </div>
 
   <!-- Écran de fin -->
