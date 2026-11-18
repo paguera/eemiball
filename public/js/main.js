@@ -9,6 +9,7 @@ import { createPhysics, RAYON_BOULE } from './physics.js';
 import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
+import { calculerScore, chargerClassement, envoyerScore, lireNomSauvegarde, sauvegarderNom } from './scores.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -100,6 +101,55 @@ let cap = niveau.capDepart; // direction de la caméra (radians)
 const posCamera = new THREE.Vector3();
 const cibleCamera = new THREE.Vector3();
 
+// ---------------- Classement & joueur ----------------
+const champNom = $('champ-nom');
+const elClassement = $('classement-liste');
+champNom.value = lireNomSauvegarde();
+champNom.addEventListener('input', () => sauvegarderNom(champNom.value));
+
+function afficherClassement(liste) {
+  elClassement.textContent = '';
+  if (!liste || !liste.length) {
+    elClassement.textContent = 'Aucun score enregistré pour le moment.';
+    return;
+  }
+  const medailles = ['🥇', '🥈', '🥉'];
+  liste.forEach((entree, i) => {
+    const ligne = document.createElement('div');
+    ligne.className = 'classement-ligne';
+
+    const rang = document.createElement('span');
+    rang.className = 'classement-rang';
+    rang.textContent = medailles[i] || `${i + 1}.`;
+
+    const nom = document.createElement('span');
+    nom.className = 'classement-nom';
+    nom.textContent = entree.nom || 'Anonyme';
+
+    const badge = document.createElement('span');
+    const diff = entree.difficulte || 'normal';
+    badge.className = `classement-badge ${diff}`;
+    badge.textContent = diff;
+
+    const score = document.createElement('span');
+    score.className = 'classement-score';
+    score.textContent = `${entree.score} pts`;
+
+    const temps = document.createElement('span');
+    temps.className = 'classement-temps';
+    temps.textContent = `${Number(entree.temps).toFixed(1)} s`;
+
+    ligne.append(rang, nom, badge, score, temps);
+    elClassement.append(ligne);
+  });
+}
+
+async function rafraichirClassement() {
+  const liste = await chargerClassement();
+  afficherClassement(liste);
+}
+rafraichirClassement();
+
 function replacerBoule() {
   physique.replacer(niveau.depart);
   cap = niveau.capDepart;
@@ -108,6 +158,7 @@ function replacerBoule() {
 }
 
 function nouvellePartie() {
+  sauvegarderNom(champNom.value);
   game.temps = 0;
   game.boostJusqua = 0;
   game.chutes = 0;
@@ -130,14 +181,27 @@ function retourAccueil() {
   $('reglages').classList.add('cache');
   $('joystick').classList.add('cache');
   $('ecran-titre').classList.remove('cache');
+  rafraichirClassement();
 }
 
-function finDePartie() {
+async function finDePartie() {
   game.etat = 'fin';
   $('hud').classList.add('cache');
   $('ecran-fin').classList.remove('cache');
+  const diff = difficulteActuelle() || 'normal';
+  const nom = champNom.value.trim() || 'Anonyme';
+  const score = calculerScore(game.temps, diff, game.chutes);
   $('fin-titre').textContent = "Arrivé à l'EEMI ! 🎓";
-  $('fin-texte').textContent = `Chutes : ${game.chutes}`;
+  $('fin-texte').textContent =
+    `${nom} · Score : ${score} pts · Temps : ${game.temps.toFixed(2)} s · Chutes : ${game.chutes}`;
+  const liste = await envoyerScore({
+    nom,
+    score,
+    temps: game.temps,
+    difficulte: diff,
+    chutes: game.chutes,
+  });
+  afficherClassement(liste);
 }
 
 // ---------------- Boutons ----------------
@@ -176,11 +240,12 @@ $('btn-reglages').addEventListener('click', () => $('reglages').classList.toggle
 $('btn-fermer').addEventListener('click', () => $('reglages').classList.add('cache'));
 $('btn-defaut').addEventListener('click', reinitialiser);
 addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') {
+  const dansChamp = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+  if (e.key === 'Enter' || (e.key === ' ' && !dansChamp)) {
     if (game.etat === 'titre') lancer();
     else if (game.etat === 'fin') nouvellePartie();
   }
-  if (e.key.toLowerCase() === 'r' && game.etat === 'jeu') replacerBoule();
+  if (!dansChamp && e.key.toLowerCase() === 'r' && game.etat === 'jeu') replacerBoule();
   if (e.key === 'Escape' && game.etat !== 'titre') retourAccueil();
 });
 
@@ -213,10 +278,11 @@ function placerCamera(dt, immediat = false) {
 }
 
 // ---------------- HUD ----------------
-const elEffets = $('effets'), elPoint = $('inclino-point'), elMode = $('mode'), elDebug = $('debug');
+const elChrono = $('chrono'), elEffets = $('effets'), elPoint = $('inclino-point'), elMode = $('mode'), elDebug = $('debug');
 const NOMS_MODES = { gyro: '📱 gyroscope', clavier: '⌨️ clavier', tactile: '👆 joystick' };
 
 function majHUD() {
+  elChrono.textContent = `${game.temps.toFixed(1)} s`;
   elEffets.textContent = game.boost ? `☕ ${(game.boostJusqua - game.temps).toFixed(1)} s` : '';
   elPoint.style.transform = `translate(${controles.tilt.x * 27}px, ${-controles.tilt.y * 27}px)`;
   elMode.textContent = NOMS_MODES[controles.mode] || '';

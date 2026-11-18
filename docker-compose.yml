@@ -14,12 +14,27 @@ services:
       - ./public:/srv:ro,Z
       - caddy_data:/data
       - caddy_config:/config
+    depends_on:
+      - api
+    networks:
+      - nas-net
+
+  api:
+    image: docker.io/library/python:3.12-alpine
+    container_name: eemiball-api
+    restart: unless-stopped
+    working_dir: /app
+    command: python3 server.py
+    volumes:
+      - ./api:/app:ro,Z
+      - scores_data:/data
     networks:
       - nas-net
 
 volumes:
   caddy_data:
   caddy_config:
+  scores_data:
 
 networks:
   nas-net:

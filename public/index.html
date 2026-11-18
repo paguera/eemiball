@@ -9,7 +9,7 @@
   <title>EEMI Ball</title>
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="apple-touch-icon" href="assets/favicon.png">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 
   <!-- Bibliothèques chargées depuis un CDN (versions figées) : aucune installation nécessaire -->
   <script type="importmap">
@@ -41,6 +41,7 @@
   <!-- Interface pendant la partie -->
   <div id="hud" class="cache">
     <button id="btn-quitter" title="Retourner à l'accueil">✕ Quitter</button>
+    <div id="chrono">0.0 s</div>
     <div id="effets"></div>
     <div id="boutons">
       <button id="btn-calib" title="Recalibrer le gyroscope (position actuelle = à plat)">⟳</button>
@@ -68,19 +69,25 @@
   <!-- Écran titre -->
   <div id="ecran-titre" class="ecran">
     <img src="assets/logo.png" alt="Super EEMI Roll" class="logo-titre">
-    <p class="accroche">Roule jusqu'à l'EEMI avant le début du cours !</p>
+    <p class="accroche">Roule jusqu'à l'EEMI le plus vite possible !</p>
+    <div class="zone-joueur">
+      <input id="champ-nom" type="text" maxlength="20" placeholder="Entre ton pseudo…" autocomplete="nickname">
+    </div>
     <div id="difficultes" class="difficultes" data-niveau="normal" role="group" aria-label="Niveau de difficulté">
       <button type="button" class="btn-diff" data-difficulte="facile">Facile</button>
       <button type="button" class="btn-diff actif" data-difficulte="normal">Normal</button>
       <button type="button" class="btn-diff" data-difficulte="difficile">Difficile</button>
     </div>
     <button id="btn-jouer">Jouer</button>
+    <div id="classement" class="classement">
+      <h2>🏆 Classement</h2>
+      <div id="classement-liste" class="classement-liste">Chargement…</div>
+    </div>
     <p class="aide">
       Tiens ton téléphone devant toi, comme pour lire, puis appuie sur <b>Jouer</b> :
       cette position devient « à plat ». Penche-le pour faire rouler la boule.<br>
       Sur ordinateur : flèches ou ZQSD.
     </p>
-    <p id="meilleur"></p>
   </div>
 
   <!-- Écran de fin -->

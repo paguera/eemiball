@@ -29,6 +29,7 @@ export class Controls {
     // --- Clavier ---
     const flechesEtc = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '];
     addEventListener('keydown', (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       const k = e.key.toLowerCase();
       this.touches.add(k);
       if (flechesEtc.includes(k)) e.preventDefault();

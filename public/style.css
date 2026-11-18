@@ -23,18 +23,33 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
 .ecran {
   position: fixed; inset: 0; z-index: 20;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 16px; padding: 24px 16px; text-align: center;
+  gap: 12px; padding: 20px 16px; text-align: center;
+  overflow-y: auto; touch-action: pan-y;
   background: rgba(20, 22, 50, 0.72); backdrop-filter: blur(3px);
 }
 .ecran h1 { margin: 0; font-size: clamp(2.4rem, 11vw, 4.5rem); letter-spacing: -1px; }
 .ecran h1 span { color: #ffcc00; }
 .logo-titre {
-  width: min(360px, 85vw);
+  width: min(300px, 78vw);
   height: auto;
   display: block;
   filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45));
 }
-.accroche { font-size: 1.15rem; margin: 0; }
+.accroche { font-size: 1.05rem; margin: 0; }
+.zone-joueur { width: min(280px, 85vw); }
+#champ-nom {
+  width: 100%; padding: 10px 16px; border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(20, 22, 50, 0.85); color: #fff;
+  font: inherit; font-size: 1rem; font-weight: 600; text-align: center;
+  outline: none; user-select: text; -webkit-user-select: text; touch-action: manipulation;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#champ-nom:focus {
+  border-color: #ffcc00;
+  box-shadow: 0 0 12px rgba(255, 204, 0, 0.4);
+}
+#champ-nom::placeholder { color: rgba(255, 255, 255, 0.5); }
 .difficultes {
   display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;
   padding: 8px 12px; border-radius: 999px;
@@ -82,8 +97,33 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
   box-shadow: 0 4px 0 #a81c29; opacity: 1;
 }
 .btn-diff.actif[data-difficulte="difficile"]:active { box-shadow: 0 2px 0 #a81c29; }
-.aide { max-width: 420px; opacity: 0.85; font-size: 0.95rem; line-height: 1.4; margin: 0; }
-#meilleur { color: #ffcc00; margin: 0; }
+.aide { max-width: 420px; opacity: 0.85; font-size: 0.9rem; line-height: 1.35; margin: 0; }
+.classement {
+  width: min(380px, 92vw);
+  background: rgba(15, 17, 40, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px; padding: 10px 14px;
+}
+.classement h2 { margin: 0 0 8px; font-size: 1.05rem; color: #ffcc00; }
+.classement-liste {
+  max-height: 165px; overflow-y: auto; touch-action: pan-y;
+  display: flex; flex-direction: column; gap: 5px; font-size: 0.88rem;
+}
+.classement-ligne {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 5px 8px; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.classement-rang { font-weight: 800; min-width: 24px; text-align: left; }
+.classement-nom { flex: 1; text-align: left; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.classement-badge {
+  font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; text-transform: capitalize;
+}
+.classement-badge.facile { background: rgba(46, 204, 113, 0.25); color: #2ecc71; }
+.classement-badge.normal { background: rgba(255, 204, 0, 0.25); color: #ffcc00; }
+.classement-badge.difficile { background: rgba(255, 71, 87, 0.25); color: #ff4757; }
+.classement-score { font-weight: 800; color: #ffcc00; font-variant-numeric: tabular-nums; }
+.classement-temps { opacity: 0.75; font-size: 0.8rem; font-variant-numeric: tabular-nums; min-width: 48px; text-align: right; }
 
 /* ====== HUD ====== */
 #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
