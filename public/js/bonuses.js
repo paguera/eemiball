@@ -77,8 +77,8 @@ export const TYPES_BONUS = {
       return g;
     },
     appliquer(game) {
-      game.tempsRestant += 10;
-      game.flash('⚡ Canette : +10 secondes');
+      game.boostJusqua = Math.max(game.temps, game.boostJusqua) + 5;
+      game.flash('⚡ Canette : Boost x1.6 !');
     },
   },
 };

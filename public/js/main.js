@@ -10,7 +10,6 @@ import { buildLevel } from './level.js';
 import { createBonuses } from './bonuses.js';
 import { createGeant } from './geant.js';
 
-const DUREE = 60; // secondes pour arriver à l'école
 const $ = (id) => document.getElementById(id);
 
 // ---------------- Rendu ----------------
@@ -82,7 +81,6 @@ scene.add(boule);
 // ---------------- État du jeu ----------------
 const game = {
   etat: 'titre',            // 'titre' | 'jeu' | 'fin'
-  tempsRestant: DUREE,
   temps: 0,                 // temps écoulé depuis le départ
   boostJusqua: 0,
   chutes: 0,
@@ -110,7 +108,6 @@ function replacerBoule() {
 }
 
 function nouvellePartie() {
-  game.tempsRestant = DUREE;
   game.temps = 0;
   game.boostJusqua = 0;
   game.chutes = 0;
@@ -125,29 +122,22 @@ function nouvellePartie() {
   game.flash('Partez !');
 }
 
-function finDePartie(gagne) {
+function retourAccueil() {
+  game.etat = 'titre';
+  replacerBoule();
+  $('hud').classList.add('cache');
+  $('ecran-fin').classList.add('cache');
+  $('reglages').classList.add('cache');
+  $('joystick').classList.add('cache');
+  $('ecran-titre').classList.remove('cache');
+}
+
+function finDePartie() {
   game.etat = 'fin';
   $('hud').classList.add('cache');
   $('ecran-fin').classList.remove('cache');
-  if (gagne) {
-    const t = game.temps;
-    let record = lireRecord();
-    const nouveau = !record || t < record;
-    if (nouveau) { ecrireRecord(t); record = t; }
-    $('fin-titre').textContent = "Arrivé à l'EEMI ! 🎓";
-    $('fin-texte').textContent =
-      `Temps : ${t.toFixed(2)} s · chutes : ${game.chutes}` + (nouveau ? ' · nouveau record !' : ` · record : ${record.toFixed(2)} s`);
-  } else {
-    $('fin-titre').textContent = 'En retard ! ⏰';
-    $('fin-texte').textContent = 'Le cours a commencé sans toi… Réessaie !';
-  }
-}
-
-function lireRecord() { try { return parseFloat(localStorage.getItem('eemiball-record')) || null; } catch { return null; } }
-function ecrireRecord(t) { try { localStorage.setItem('eemiball-record', String(t)); } catch { /* rien */ } }
-{
-  const r = lireRecord();
-  if (r) $('meilleur').textContent = `Record : ${r.toFixed(2)} s`;
+  $('fin-titre').textContent = "Arrivé à l'EEMI ! 🎓";
+  $('fin-texte').textContent = `Chutes : ${game.chutes}`;
 }
 
 // ---------------- Boutons ----------------
@@ -179,6 +169,8 @@ boutonsDiff.forEach((btn) => {
 });
 $('btn-jouer').addEventListener('click', lancer);
 $('btn-rejouer').addEventListener('click', nouvellePartie);
+$('btn-quitter').addEventListener('click', retourAccueil);
+$('btn-accueil').addEventListener('click', retourAccueil);
 $('btn-calib').addEventListener('click', () => { controles.calibrer(); game.flash('Recalibré ✔'); });
 $('btn-reglages').addEventListener('click', () => $('reglages').classList.toggle('cache'));
 $('btn-fermer').addEventListener('click', () => $('reglages').classList.add('cache'));
@@ -189,6 +181,7 @@ addEventListener('keydown', (e) => {
     else if (game.etat === 'fin') nouvellePartie();
   }
   if (e.key.toLowerCase() === 'r' && game.etat === 'jeu') replacerBoule();
+  if (e.key === 'Escape' && game.etat !== 'titre') retourAccueil();
 });
 
 // ---------------- Caméra ----------------
@@ -220,12 +213,10 @@ function placerCamera(dt, immediat = false) {
 }
 
 // ---------------- HUD ----------------
-const elChrono = $('chrono'), elEffets = $('effets'), elPoint = $('inclino-point'), elMode = $('mode'), elDebug = $('debug');
+const elEffets = $('effets'), elPoint = $('inclino-point'), elMode = $('mode'), elDebug = $('debug');
 const NOMS_MODES = { gyro: '📱 gyroscope', clavier: '⌨️ clavier', tactile: '👆 joystick' };
 
 function majHUD() {
-  elChrono.textContent = Math.max(0, game.tempsRestant).toFixed(1);
-  elChrono.classList.toggle('urgent', game.tempsRestant < 10);
   elEffets.textContent = game.boost ? `☕ ${(game.boostJusqua - game.temps).toFixed(1)} s` : '';
   elPoint.style.transform = `translate(${controles.tilt.x * 27}px, ${-controles.tilt.y * 27}px)`;
   elMode.textContent = NOMS_MODES[controles.mode] || '';
@@ -256,7 +247,6 @@ function image(maintenant) {
 
   if (game.etat === 'jeu') {
     game.temps += dt;
-    game.tempsRestant -= dt;
 
     physique.appliquerInclinaison(controles.tilt, cap, game.boost);
     physique.world.step(1 / 60, dt, 5);
@@ -272,9 +262,7 @@ function image(maintenant) {
       replacerBoule();
       game.flash('Plouf ! Retour au départ');
     } else if (niveau.estArrive(boule.position)) {
-      finDePartie(true);
-    } else if (game.tempsRestant <= 0) {
-      finDePartie(false);
+      finDePartie();
     }
     placerCamera(dt);
     geant.update(dt, horloge, boule.position, cap, camera);

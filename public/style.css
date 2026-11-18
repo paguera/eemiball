@@ -28,6 +28,12 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
 }
 .ecran h1 { margin: 0; font-size: clamp(2.4rem, 11vw, 4.5rem); letter-spacing: -1px; }
 .ecran h1 span { color: #ffcc00; }
+.logo-titre {
+  width: min(360px, 85vw);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45));
+}
 .accroche { font-size: 1.15rem; margin: 0; }
 .difficultes {
   display: inline-flex; gap: 10px; flex-wrap: wrap; justify-content: center;
@@ -81,6 +87,14 @@ button.secondaire { background: #3a3f6b; box-shadow: 0 4px 0 #23264a; }
 
 /* ====== HUD ====== */
 #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+#btn-quitter {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px;
+  pointer-events: auto;
+  padding: 10px 16px; font-size: 0.95rem;
+  background: rgba(30, 30, 60, 0.78); box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+#btn-quitter:hover { background: rgba(230, 0, 126, 0.85); }
 #chrono {
   position: absolute; top: max(12px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
   font-size: 2.4rem; font-weight: 800; font-variant-numeric: tabular-nums;
