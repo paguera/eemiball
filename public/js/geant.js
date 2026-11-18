@@ -12,9 +12,14 @@ import * as THREE from 'three';
 const HAUTEUR = 70;        // taille en mètres (la boule fait 1 m)
 const Y_SOL = -60;         // le sol de la ville (voir level.js)
 const MOUVEMENT_REDUIT = matchMedia('(prefers-reduced-motion: reduce)');
-const RAPPORT = 320 / 507; // largeur / hauteur de l'image (BOSS TV 2)
-// Position de l'écran noir dans l'image (fractions : gauche, haut, droite, bas)
-const ECRAN = { gauche: 0.344, haut: 0.021, droite: 0.738, bas: 0.215 };
+// Apparences du géant : une image par niveau (sinon celle par défaut).
+// rapport : largeur / hauteur de l'image ; ecran : position de l'écran noir
+// de la télé dans l'image (fractions : gauche, haut, droite, bas).
+const APPARENCES = {
+  defaut: { image: 'assets/geant-boss.avif', rapport: 320 / 507, ecran: { gauche: 0.344, haut: 0.021, droite: 0.738, bas: 0.215 } },
+  2: { image: 'assets/geant-boss-graphisme.webp', rapport: 392 / 560, ecran: { gauche: 0.37, haut: 0.1, droite: 0.78, bas: 0.29 } },
+};
+const apparenceDu = (niveau) => APPARENCES[niveau] || APPARENCES.defaut;
 const DUREE_MESSAGE = 3.5; // secondes par message
 
 // Messages de la télé. Chaque ligne reçoit l'état du jeu et renvoie 1 à 3 lignes de texte.
@@ -34,13 +39,23 @@ const MESSAGES = [
   () => ['BONJOUR', 'LYON !'],
   () => ['TOKENS', 'ÉPUISÉS', 'PASSE PRO'],
 ];
-// Messages en plus au niveau 2 (univers graphisme)
+// Messages du niveau 2 (univers graphisme) : ils remplacent les messages habituels
 const MESSAGES_GRAPHISME = [
+  (j) => [`NIVEAU ${j.niveau || 2}`, NOMS_DIFFICULTE[j.difficulte] || 'VITESSE MOYENNE'],
   () => ['CTRL+Z', 'CTRL+Z', 'CTRL+Z'],
+  (j) => (j.etat === 'jeu' ? ['RENDU DANS', `${j.temps.toFixed(1)} s`] : ['PRÊT ?', 'APPUIE SUR', 'JOUER']),
   () => ['COMIC SANS', 'DÉTECTÉE !'],
+  () => ['LE CLIENT', 'VEUT LE LOGO', 'PLUS GROS'],
+  (j) => (j.chutes > 0 ? ['ANNULER', `×${j.chutes}`] : ['RESTE DANS', 'LE CADRE !']),
   () => ['EXPORT', 'final_v7.png'],
   () => ['KERNING', 'À REVOIR'],
+  () => ['FOND PERDU', '3 MM !'],
   () => ['RVB ≠ CMJN'],
+  () => ['72 DPI ?!', 'PIXELISÉ'],
+  () => ['PANTONE', 'INTROUVABLE'],
+  () => ['LOREM', 'IPSUM'],
+  () => ['ALIGNE', 'TES CALQUES'],
+  () => ['CANETTE', '= BOOST ×1.6'],
 ];
 // Messages en plus au niveau 3 (univers marketing)
 const MESSAGES_MARKETING = [
@@ -52,7 +67,7 @@ const MESSAGES_MARKETING = [
   () => ['PUB', '(pas skippable)'],
 ];
 function listeMessages(j) {
-  if (j.niveau === 2) return [...MESSAGES, ...MESSAGES_GRAPHISME];
+  if (j.niveau === 2) return MESSAGES_GRAPHISME;
   if (j.niveau === 3) return [...MESSAGES, ...MESSAGES_MARKETING];
   return MESSAGES;
 }
@@ -142,33 +157,47 @@ function creerEcranTele() {
 }
 
 export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', temps: 0, chutes: 0, etat: 'titre' })) {
-  const texture = new THREE.TextureLoader().load('assets/geant-boss.avif');
-  texture.colorSpace = THREE.SRGBColorSpace;
-
-  // Plan dont l'origine est aux pieds : il pivote depuis le sol
-  const geometrie = new THREE.PlaneGeometry(HAUTEUR * RAPPORT, HAUTEUR);
-  geometrie.translate(0, HAUTEUR / 2, 0);
-  const image = new THREE.Mesh(
-    geometrie,
-    new THREE.MeshBasicMaterial({ map: texture, alphaTest: 0.2, side: THREE.DoubleSide }),
-  );
+  const chargeur = new THREE.TextureLoader();
+  const textures = {}; // une texture par image, chargée la première fois qu'on en a besoin
+  const materiau = new THREE.MeshBasicMaterial({ alphaTest: 0.2, side: THREE.DoubleSide });
+  const image = new THREE.Mesh(new THREE.BufferGeometry(), materiau);
   // Écran de la télé : un plan posé juste devant l'écran noir de l'image
   const tele = creerEcranTele();
-  const largeurImage = HAUTEUR * RAPPORT;
-  const marge = 0.04; // reste à l'intérieur du cadre de la télé
   const ecran = new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      largeurImage * (ECRAN.droite - ECRAN.gauche) * (1 - marge * 2),
-      HAUTEUR * (ECRAN.bas - ECRAN.haut) * (1 - marge * 2),
-    ),
+    new THREE.BufferGeometry(),
     new THREE.MeshBasicMaterial({ map: tele.texture, transparent: true, toneMapped: false }),
   );
-  ecran.position.set(
-    largeurImage * ((ECRAN.gauche + ECRAN.droite) / 2 - 0.5),
-    HAUTEUR * (1 - (ECRAN.haut + ECRAN.bas) / 2),
-    0.3,
-  );
   image.add(ecran); // l'écran suit le balancement du géant
+
+  let apparence = null;
+  /** Change l'image du géant (et place l'écran de la télé dessus) selon le niveau. */
+  function changerApparence(niveau) {
+    const a = apparenceDu(niveau);
+    if (a === apparence) return;
+    apparence = a;
+    if (!textures[a.image]) {
+      textures[a.image] = chargeur.load(a.image);
+      textures[a.image].colorSpace = THREE.SRGBColorSpace;
+    }
+    materiau.map = textures[a.image];
+    materiau.needsUpdate = true;
+    // Plan dont l'origine est aux pieds : il pivote depuis le sol
+    const largeurImage = HAUTEUR * a.rapport;
+    image.geometry.dispose();
+    image.geometry = new THREE.PlaneGeometry(largeurImage, HAUTEUR).translate(0, HAUTEUR / 2, 0);
+    const E = a.ecran, marge = 0.04; // reste à l'intérieur du cadre de la télé
+    ecran.geometry.dispose();
+    ecran.geometry = new THREE.PlaneGeometry(
+      largeurImage * (E.droite - E.gauche) * (1 - marge * 2),
+      HAUTEUR * (E.bas - E.haut) * (1 - marge * 2),
+    );
+    ecran.position.set(
+      largeurImage * ((E.gauche + E.droite) / 2 - 0.5),
+      HAUTEUR * (1 - (E.haut + E.bas) / 2),
+      0.3,
+    );
+  }
+  changerApparence(lireEtatJeu().niveau);
   let indexMessage = 0, debutMessage = 0, prochainDessin = 0;
 
   const geant = new THREE.Group(); // le groupe se tourne vers la caméra, l'image se balance dedans
@@ -193,6 +222,7 @@ export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', 
         posBoule.z + avZ * DISTANCE_DEPART + gaZ * 26,
       );
       enArrivee = true;
+      changerApparence(lireEtatJeu().niveau);
       indexMessage = 0; // au départ, la télé annonce le niveau et la difficulté
       debutMessage = -Infinity;
     },
@@ -247,6 +277,7 @@ export function createGeant(scene, lireEtatJeu = () => ({ difficulte: 'normal', 
       if (t >= prochainDessin) {
         prochainDessin = t + 0.5;
         const etat = lireEtatJeu();
+        changerApparence(etat.niveau); // au cas où le niveau a changé depuis le menu
         const liste = listeMessages(etat);
         const lignes = liste[indexMessage % liste.length](etat);
         const glitch = !calme && t - debutMessage < 0.25;
