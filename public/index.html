@@ -9,7 +9,7 @@
   <title>Super EEMI Roll</title>
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/favicon.png">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link rel="stylesheet" href="style.css?v=9">
 
   <!-- Bibliothèques embarquées localement dans public/vendor/ -->
   <script type="importmap">
@@ -96,21 +96,28 @@
       <span class="btn-perso-texte">Personnage<b id="perso-nom">Thibault</b></span>
       <svg class="icone" aria-hidden="true"><use href="#i-suivant"/></svg>
     </button>
-    <div id="difficultes" class="difficultes" data-niveau="normal" role="group" aria-label="Niveau de difficulté">
-      <button type="button" class="btn-diff" data-difficulte="facile">Facile</button>
-      <button type="button" class="btn-diff actif" data-difficulte="normal">Normal</button>
-      <button type="button" class="btn-diff" data-difficulte="difficile">Difficile</button>
+    <div class="choix-groupe">
+      <span class="choix-titre" id="titre-niveaux">Niveau</span>
+      <div id="niveaux" class="niveaux" role="group" aria-labelledby="titre-niveaux">
+        <button type="button" class="btn-niveau actif" data-niveau="1" aria-pressed="true"><b>1</b><span>Presqu'île</span></button>
+        <button type="button" class="btn-niveau" data-niveau="2" disabled><b>2</b><span>Bientôt</span></button>
+        <button type="button" class="btn-niveau" data-niveau="3" disabled><b>3</b><span>Bientôt</span></button>
+      </div>
+    </div>
+    <div class="choix-groupe">
+      <span class="choix-titre" id="titre-vitesse">Vitesse</span>
+      <div id="difficultes" class="vitesses" data-niveau="normal" role="group" aria-labelledby="titre-vitesse">
+        <button type="button" class="btn-diff" data-difficulte="facile">Lent</button>
+        <button type="button" class="btn-diff actif" data-difficulte="normal">Moyen</button>
+        <button type="button" class="btn-diff" data-difficulte="difficile">Rapide</button>
+      </div>
     </div>
     <button id="btn-jouer" type="button">Jouer</button>
     <div id="classement" class="classement">
       <h2><svg class="icone" aria-hidden="true"><use href="#i-trophee"/></svg>Classement</h2>
       <div id="classement-liste" class="classement-liste" aria-live="polite">Chargement…</div>
     </div>
-    <p class="aide">
-      Tiens ton téléphone devant toi, comme pour lire, puis appuie sur <b>Jouer</b> :
-      cette position devient « à plat ». Penche-le pour faire rouler la boule.<br>
-      Sur ordinateur : flèches ou ZQSD.
-    </p>
+    <p class="aide">Penche ton téléphone pour rouler · Ordi : flèches ou ZQSD</p>
   </div>
 
   <!-- Choix du personnage -->
