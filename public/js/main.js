@@ -105,6 +105,7 @@ const cibleCamera = new THREE.Vector3();
 function replacerBoule() {
   physique.replacer(niveau.depart);
   cap = niveau.capDepart;
+  boule.position.copy(physique.boule.position);
   placerCamera(1, true);
 }
 
@@ -115,7 +116,7 @@ function nouvellePartie() {
   game.chutes = 0;
   bonus.reset();
   replacerBoule();
-  geant.update(0, horloge, boule.position, cap, camera, true);
+  geant.arriver(physique.boule.position, cap);
   controles.calibrer();
   game.etat = 'jeu';
   $('ecran-titre').classList.add('cache');
@@ -299,4 +300,4 @@ physique.replacer(niveau.depart);
 boule.position.copy(physique.boule.position);
 requestAnimationFrame(image);
 window.__jeuPret = true;
-window.__debug = { physique, game, controles, params, image }; // pour inspecter depuis la console
+window.__debug = { physique, game, controles, params, image, geant }; // pour inspecter depuis la console
