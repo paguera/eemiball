@@ -7,7 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <title>EEMI Ball</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="style.css?v=3">
 
   <!-- Bibliothèques chargées depuis un CDN (versions figées) : aucune installation nécessaire -->
   <script type="importmap">
@@ -38,7 +40,7 @@
 
   <!-- Interface pendant la partie -->
   <div id="hud" class="cache">
-    <div id="chrono">60.0</div>
+    <button id="btn-quitter" title="Retourner à l'accueil">✕ Quitter</button>
     <div id="effets"></div>
     <div id="boutons">
       <button id="btn-calib" title="Recalibrer le gyroscope (position actuelle = à plat)">⟳</button>
@@ -65,7 +67,7 @@
 
   <!-- Écran titre -->
   <div id="ecran-titre" class="ecran">
-    <h1>EEMI <span>Ball</span></h1>
+    <img src="assets/logo.png" alt="Super EEMI Roll" class="logo-titre">
     <p class="accroche">Roule jusqu'à l'EEMI avant le début du cours !</p>
     <div id="difficultes" class="difficultes" data-niveau="normal" role="group" aria-label="Niveau de difficulté">
       <button type="button" class="btn-diff" data-difficulte="facile">Facile</button>
@@ -85,7 +87,10 @@
   <div id="ecran-fin" class="ecran cache">
     <h1 id="fin-titre"></h1>
     <p id="fin-texte"></p>
-    <button id="btn-rejouer">Rejouer</button>
+    <div class="ligne-boutons">
+      <button id="btn-rejouer">Rejouer</button>
+      <button id="btn-accueil" class="secondaire">Accueil</button>
+    </div>
   </div>
 
   <div id="erreur" hidden></div>
