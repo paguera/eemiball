@@ -8,6 +8,7 @@ import os
 import re
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
 
 DB_PATH = os.environ.get("DB_PATH", "/data/scores.db")
 PORT = int(os.environ.get("PORT", "3000"))
@@ -39,26 +40,53 @@ def init_db():
                 score INTEGER NOT NULL,
                 temps REAL NOT NULL,
                 difficulte TEXT NOT NULL DEFAULT 'normal',
+                niveau INTEGER NOT NULL DEFAULT 1,
                 chutes INTEGER NOT NULL DEFAULT 0,
                 cree_le TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+        # Migration douce si la table existait déjà avant l'ajout de la colonne `niveau`
+        try:
+            conn.execute("ALTER TABLE scores ADD COLUMN niveau INTEGER NOT NULL DEFAULT 1")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
 
 
-def lire_classement(limite=LIMITE_CLASSEMENT):
+def nettoyer_niveau(niveau):
+    try:
+        n = int(niveau)
+        return n if 1 <= n <= 10 else 1
+    except (TypeError, ValueError):
+        return 1
+
+
+def lire_classement(niveau=None, limite=LIMITE_CLASSEMENT):
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
-        lignes = conn.execute(
-            """
-            SELECT nom, score, temps, difficulte, chutes, cree_le
-            FROM scores
-            ORDER BY score DESC, temps ASC
-            LIMIT ?
-            """,
-            (limite,),
-        ).fetchall()
+        if niveau is not None:
+            n = nettoyer_niveau(niveau)
+            lignes = conn.execute(
+                """
+                SELECT nom, score, temps, difficulte, niveau, chutes, cree_le
+                FROM scores
+                WHERE niveau = ?
+                ORDER BY score DESC, temps ASC
+                LIMIT ?
+                """,
+                (n, limite),
+            ).fetchall()
+        else:
+            lignes = conn.execute(
+                """
+                SELECT nom, score, temps, difficulte, niveau, chutes, cree_le
+                FROM scores
+                ORDER BY score DESC, temps ASC
+                LIMIT ?
+                """,
+                (limite,),
+            ).fetchall()
         return [dict(r) for r in lignes]
 
 
@@ -67,7 +95,7 @@ def nettoyer_nom(nom):
     return (texte or "Anonyme")[:20]
 
 
-def enregistrer_score(nom, temps, difficulte="normal", chutes=0):
+def enregistrer_score(nom, temps, difficulte="normal", chutes=0, niveau=1):
     nom_propre = nettoyer_nom(nom)
     temps_float = round(float(temps), 2)
     if temps_float < 4.0 or temps_float > 3600.0:
@@ -77,19 +105,20 @@ def enregistrer_score(nom, temps, difficulte="normal", chutes=0):
     if diff_propre not in MULT_DIFFICULTE:
         diff_propre = "normal"
 
+    niveau_int = nettoyer_niveau(niveau)
     chutes_int = max(0, min(999, int(chutes or 0)))
     score_int = calculer_score(temps_float, diff_propre, chutes_int)
 
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             """
-            INSERT INTO scores (nom, score, temps, difficulte, chutes)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO scores (nom, score, temps, difficulte, niveau, chutes)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (nom_propre, score_int, temps_float, diff_propre, chutes_int),
+            (nom_propre, score_int, temps_float, diff_propre, niveau_int, chutes_int),
         )
         conn.commit()
-    return lire_classement()
+    return lire_classement(niveau=niveau_int)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -104,9 +133,12 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(corps)
 
     def do_GET(self):
-        if self.path.startswith("/api/scores"):
+        url = urlparse(self.path)
+        if url.path.startswith("/api/scores"):
             try:
-                self._envoyer_json(200, lire_classement())
+                params = parse_qs(url.query)
+                niveau = params.get("niveau", [None])[0]
+                self._envoyer_json(200, lire_classement(niveau=niveau))
             except Exception:
                 self._envoyer_json(500, {"erreur": "Erreur serveur"})
         else:
@@ -126,6 +158,7 @@ class Handler(BaseHTTPRequestHandler):
                     temps=data.get("temps", 0),
                     difficulte=data.get("difficulte", "normal"),
                     chutes=data.get("chutes", 0),
+                    niveau=data.get("niveau", 1),
                 )
                 self._envoyer_json(201, classement)
             except Exception:

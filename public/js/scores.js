@@ -1,6 +1,6 @@
 // =====================================================================
-//  SCORES & CLASSEMENT
-//  Enregistre les scores dans la base SQLite (/api/scores) avec
+//  SCORES & CLASSEMENT PAR NIVEAU
+//  Enregistre les scores dans la base SQLite (/api/scores?niveau=N) avec
 //  repli automatique sur localStorage si l'API n'est pas joignable.
 // =====================================================================
 
@@ -38,43 +38,53 @@ function lireLocal() {
   try { return JSON.parse(localStorage.getItem(CLE_LOCALE)) || []; } catch { return []; }
 }
 
-function ecrireLocal(liste) {
-  try { localStorage.setItem(CLE_LOCALE, JSON.stringify(liste.slice(0, LIMITE_CLASSEMENT))); } catch { /* rien */ }
+function ecrireLocalParNiveau(niveau, listeNiveau) {
+  try {
+    const num = Number(niveau) || 1;
+    const autres = lireLocal().filter((e) => (Number(e.niveau) || 1) !== num);
+    const fusion = [...autres, ...listeNiveau.slice(0, LIMITE_CLASSEMENT)];
+    localStorage.setItem(CLE_LOCALE, JSON.stringify(fusion));
+  } catch { /* rien */ }
 }
 
-function trierEtLimiter(liste) {
-  return [...liste]
+function trierEtLimiterParNiveau(liste, niveau) {
+  const num = Number(niveau) || 1;
+  return liste
+    .filter((e) => (Number(e.niveau) || 1) === num)
     .sort((a, b) => (b.score - a.score) || (a.temps - b.temps))
     .slice(0, LIMITE_CLASSEMENT);
 }
 
-export async function chargerClassement() {
+export async function chargerClassement(niveau = 1) {
+  const num = Number(niveau) || 1;
   try {
-    const res = await fetch('/api/scores', { cache: 'no-store' });
+    const res = await fetch(`/api/scores?niveau=${encodeURIComponent(num)}`, { cache: 'no-store' });
     if (res.ok) {
       const donnees = await res.json();
       if (Array.isArray(donnees)) {
-        const top = donnees.slice(0, LIMITE_CLASSEMENT);
-        ecrireLocal(top);
+        const top = donnees.slice(0, LIMITE_CLASSEMENT).map((e) => ({ ...e, niveau: Number(e.niveau) || num }));
+        ecrireLocalParNiveau(num, top);
         return top;
       }
     }
   } catch { /* repli sur localStorage */ }
-  return trierEtLimiter(lireLocal());
+  return trierEtLimiterParNiveau(lireLocal(), num);
 }
 
 export async function envoyerScore(entree) {
+  const num = Number(entree.niveau) || 1;
   const propre = {
     nom: (entree.nom || '').trim() || 'Anonyme',
     score: entree.score,
     temps: Number(entree.temps.toFixed(2)),
     difficulte: entree.difficulte || 'normal',
+    niveau: num,
     chutes: entree.chutes || 0,
   };
 
   // Sauvegarde locale immédiate en secours
-  const local = trierEtLimiter([...lireLocal(), propre]);
-  ecrireLocal(local);
+  const local = trierEtLimiterParNiveau([...lireLocal(), propre], num);
+  ecrireLocalParNiveau(num, local);
 
   try {
     const res = await fetch('/api/scores', {
@@ -85,8 +95,8 @@ export async function envoyerScore(entree) {
     if (res.ok) {
       const donnees = await res.json();
       if (Array.isArray(donnees)) {
-        const top = donnees.slice(0, LIMITE_CLASSEMENT);
-        ecrireLocal(top);
+        const top = donnees.slice(0, LIMITE_CLASSEMENT).map((e) => ({ ...e, niveau: Number(e.niveau) || num }));
+        ecrireLocalParNiveau(num, top);
         return top;
       }
     }
