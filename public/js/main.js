@@ -41,9 +41,11 @@ addEventListener('resize', redimensionner);
 redimensionner();
 
 // ---------------- Réglages, physique, niveau ----------------
+const menuDiff = $('difficultes');
 const boutonsDiff = document.querySelectorAll('.btn-diff');
 function majBoutonsDifficulte() {
   const actuelle = difficulteActuelle();
+  menuDiff.dataset.niveau = actuelle || '';
   boutonsDiff.forEach((btn) => btn.classList.toggle('actif', btn.dataset.difficulte === actuelle));
 }
 

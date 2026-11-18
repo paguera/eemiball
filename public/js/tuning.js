@@ -21,9 +21,33 @@ export const REGLAGES = [
 ];
 
 export const DIFFICULTES = {
-  facile:    { frottement: 0.8,  inclinaisonJeu: 20, gravite: 20 },
-  normal:    { frottement: 0.4,  inclinaisonJeu: 24, gravite: 25 },
-  difficile: { frottement: 0.15, inclinaisonJeu: 32, gravite: 35 },
+  facile: {
+    frottement: 1.2,
+    inclinaisonJeu: 19,
+    gravite: 16,
+    vitesseMax: 9.5,
+    amorti: 0.14,
+    rebond: 0.05,
+    sensibilite: 0.75,
+  },
+  normal: {
+    frottement: 0.4,
+    inclinaisonJeu: 24,
+    gravite: 25,
+    vitesseMax: 14,
+    amorti: 0.05,
+    rebond: 0.15,
+    sensibilite: 1,
+  },
+  difficile: {
+    frottement: 0.05,
+    inclinaisonJeu: 38,
+    gravite: 42,
+    vitesseMax: 26,
+    amorti: 0,
+    rebond: 0.65,
+    sensibilite: 1.5,
+  },
 };
 
 const CLE_STOCKAGE = 'eemiball-reglages';
